@@ -9,14 +9,14 @@ from ..activations import GELU
 
 class Expert(nn.Module):
 
-    def __init__(self, dk:int, dh:int,  dout:int):
+    def __init__(self, dk:int, dh:int,  d_out:int):
 
         # Initialize parent
         super().__init__()
 
         # Define the FFN
         self.l1 = nn.Linear(in_features = dk, out_features = dh)
-        self.l2 = nn.Linear(in_features = dh , out_features =  dout)
+        self.l2 = nn.Linear(in_features = dh , out_features =  d_out)
 
         # Define the activation function
         self.activation = GELU()
@@ -30,7 +30,7 @@ class Expert(nn.Module):
 
 
         # Second Linear Layer (B* N, dk)-->(B*N, dhidden)
-        x = self.activation(self.l2(x))
+        x = self.l2(x)
         print(f'(expert) Output of the second linear:{x.shape}')
 
         return x

@@ -7,25 +7,29 @@ import torch.nn as nn
 from .router import Router
 from .expert import Expert
 
-
 class MOE(nn.Module):
 
-    def __init__(self, args:dict[str, int]):
+    def __init__(self, d_in:int, d_out:int, args:dict[str, int]):
         # Initialize the main module 
         super().__init__()
 
+        # Get common params
+        self.d_in = d_in
+        self.d_out = d_out
+
         # Get the args
-        self.input_dim = args.get('input_dim', 768)
         self.n_exp = args.get('experts', 1)
         self.k_routing = args.get('k_routing', 1)
-        self.emb_dim = args.get('emb_dim', 768 )
+        self.emb_dim = args.get('hidden_dim', 768 )
 
         
         # Initialize the gating mechanism
-        self.gate = Router(dk = self.input_dim, n_experts = self.n_exp, k = self.k_routing)
+        self.gate = Router(dk = self.d_in, n_experts = self.n_exp, k = self.k_routing)
 
-        # Initialize the experts
-        self.experts:list = [Expert(dk = self.input_dim, dh = self.emb_dim, dout = self.input_dim) for _ in range(self.n_exp)]
+        # Initialize the experts -> modulelist to include their parameters within model params
+        self.experts:nn.ModuleList = nn.ModuleList([Expert(dk = self.d_in, dh = self.emb_dim, dout = self.d_out) 
+                                                    for _ in range(self.n_exp)]
+                                                )
 
 
     def forward(self, x:torch.Tensor)->torch.Tensor:
@@ -35,7 +39,7 @@ class MOE(nn.Module):
         #1. Get the top-k experts
         print(f'(MOE) CALLING GATING MECHANISM')
         # Flatten before passing (B, N, din)-->(B*N, di)
-        x =  x.view(-1, self.input_dim)
+        x =  x.view(-1, self.d_in)
         # Results size (B*N, din)- (B*N, din)
         weights, selected_experts = self.gate(x)
 
@@ -50,7 +54,7 @@ class MOE(nn.Module):
             # Get matching tokens
             token_idx, expert_idx  =  torch.where(selected_experts == i)
             # Check if it is not none -> avoid calling not used experts 
-            if token_idx is None:
+            if token_idx.numel() == 0:
                 continue
             # Get expert output (batch*N, dout)
             expert_output = expert(x[token_idx, :])
@@ -62,6 +66,7 @@ class MOE(nn.Module):
             results_tensor[token_idx] += expert_weigths*expert_output
 
         #4. Reshape the  output (B*N, din = dout) - >(B, N, din = dout)
-        final_output = results_tensor.view(n_batches, tokens, self.input_dim)
+        final_output = results_tensor.view(n_batches, tokens, self.d_out)
         print(f'(MOE) Aspect of the  output tensor:', final_output.shape)
 
+        return final_output
