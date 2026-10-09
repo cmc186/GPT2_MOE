@@ -27,7 +27,7 @@ class MOE(nn.Module):
         self.gate = Router(dk = self.d_in, n_experts = self.n_exp, k = self.k_routing)
 
         # Initialize the experts -> modulelist to include their parameters within model params
-        self.experts:nn.ModuleList = nn.ModuleList([Expert(dk = self.d_in, dh = self.emb_dim, dout = self.d_out) 
+        self.experts:nn.ModuleList = nn.ModuleList([Expert(dk = self.d_in, dh = self.emb_dim, d_out = self.d_out) 
                                                     for _ in range(self.n_exp)]
                                                 )
 
