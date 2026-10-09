@@ -1,3 +1,38 @@
-/tutorials
-*Zone.Identifier
+# Datos generados (cada uno los genera con generator.ipynb)
 /data
+
+# Material personal
+/tutorials
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Modelos y resultados del entrenamiento
+checkpoints/
+runs/
+wandb/
+*.pt
+*.pth
+*.ckpt
+
+# VS Code: compartir solo la configuración común
+.vscode/*
+!.vscode/settings.json
+
+# Sistema operativo
+*Zone.Identifier
+Thumbs.db
+desktop.ini
+.DS_Store
