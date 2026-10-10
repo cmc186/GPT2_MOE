@@ -5,12 +5,16 @@ import torch.nn as nn
 # File System Imports
 from .norm import LayerNorm
 from .tf_block import TransformerBlock
+from .model_utils import moe_mask
 
 class GPTMOE(nn.Module):
     def __init__(self, attr:dict):
         # Initialize parents
         super().__init__()
-        
+
+        # Compute the moe mask
+        self.moe_mask  = moe_mask(attr.get('n_layers'), **attr.get("moe_mask"))
+
         # Define embedding layer
         self.tok_emb = nn.Embedding(attr["vocab_size"], attr["emb_dim"])
         self.pos_emb = nn.Embedding(attr["context_length"], attr["emb_dim"])
@@ -18,7 +22,7 @@ class GPTMOE(nn.Module):
 
         # Build the transformer blocks
         self.trf_blocks = nn.Sequential(
-            *[TransformerBlock(attr) for _ in range(attr["n_layers"])])
+            *[TransformerBlock(attr, use_moe = m) for m in self.moe_mask])
 
 
         # Output layer norm

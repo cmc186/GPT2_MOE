@@ -3,12 +3,14 @@ import torch
 import torch.nn as nn 
 
 # File system imports
+from .ffn import FF
 from .moe import MOE
 from .norm import LayerNorm
 from .att_block import MultiHeadAttention
 
+
 class TransformerBlock(nn.Module):
-    def __init__(self, attr:dict):
+    def __init__(self, attr:dict, use_moe:bool = True):
         # Initialize parent
         super().__init__()
         # Common params
@@ -18,12 +20,24 @@ class TransformerBlock(nn.Module):
         # Block specific params
         self.att_related = attr["attention_related"]
         self.moe_related = attr["moe_related"]
-        
+        self.use_moe = use_moe
         # Define the attention module -> ok
-        self.att = MultiHeadAttention(self.d_in, self.d_out, self.cl, self.att_related)
+        self.att = MultiHeadAttention(
+           self.d_in,
+           self.d_out,
+           self.cl,
+           self.att_related)
 
         # Define the ff layer
-        self.ff = MOE(self.d_in, self.d_out, self.moe_related) 
+        if self.use_moe:
+            self.ff = MOE(
+                    self.d_in, 
+                    self.d_out, 
+                    self.moe_related) 
+        else:
+            self.ff = FF(self.d_in, 
+                        attr.get('ffn_hidden'))
+            
 
         # Define normalizations (within and previous)
         self.norm1 = LayerNorm(self.d_in)
@@ -54,6 +68,8 @@ class TransformerBlock(nn.Module):
         x = self.drop_shortcut(x)
         # Add the original input back
         x = x + shortcut 
+
         print(f'(TFBLOCK) Aspect of block output ({x.shape})')
+ 
 
         return x
