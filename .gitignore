@@ -34,4 +34,4 @@ wandb/
 *Zone.Identifier
 Thumbs.db
 desktop.ini
-.DS_Store
+.DS_Storesrc/gpt2_moe/checkpoints/
