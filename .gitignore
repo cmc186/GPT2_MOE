@@ -20,7 +20,6 @@ env/
 .ipynb_checkpoints/
 
 # Modelos y resultados del entrenamiento
-checkpoints/
 runs/
 wandb/
 *.pt
