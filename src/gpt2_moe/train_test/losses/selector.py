@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 # Conduct relative imports
-from . import OwnLoss
+from .balanced_loss import BalancedLoss
 
 class LossSelector():
 
@@ -24,7 +24,7 @@ class LossSelector():
                 return nn.CrossEntropyLoss()
 
             case 'own':
-                return OwnLoss
+                return BalancedLoss
 
 
 

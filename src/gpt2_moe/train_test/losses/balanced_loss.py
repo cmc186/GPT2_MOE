@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class RouterLoss(nn.Module):
+class BalancedLoss(nn.Module):
 
     def __init__(self, a:float, b:float):
 
