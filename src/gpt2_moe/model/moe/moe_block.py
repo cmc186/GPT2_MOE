@@ -20,7 +20,8 @@ class MOE(nn.Module):
         # Get the args
         self.n_exp = args.get('experts', 1)
         self.k_routing = args.get('k_routing', 1)
-        self.hidden_dim = args.get('hidden_dim', 4 * self.d_in) 
+        # Working with as much params as the original 
+        self.hidden_dim = args.get('hidden_dim', (4 * self.d_in)//self.k_routing) 
 
 
         # Initialize the gating mechanism
