@@ -21,9 +21,7 @@ class MOE(nn.Module):
         self.n_exp = args.get('experts', 1)
         self.k_routing = args.get('k_routing', 1)
         # Working with as much params as the original 
-        self.hidden_dim = args.get('hidden_dim', (4 * self.d_in)//self.k_routing) 
-
-
+        self.hidden_dim = args.get('hidden_dim') or (4 * self.d_in)//self.k_routing
         # Initialize the gating mechanism
         self.gate = Router(dk = self.d_in, n_experts = self.n_exp, k = self.k_routing)
 

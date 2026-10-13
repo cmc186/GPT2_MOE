@@ -11,7 +11,7 @@ from gpt2_moe.train_test.losses import LossSelector
 from gpt2_moe.train_test.config import MODEL_ATTR, TRAIN, TASKS, EXPERIMENTS
 
 # Paths (launch from the repo root, as data/)
-BASE_PATH = 'src/gpt2_moe/checkpoints'
+BASE_PATH = "./gpt2_moe/checkpoints/"
 GPT2_NAME = 'gpt2-small-124M.pth'
 
 
@@ -172,3 +172,8 @@ def run(name:str, seed:int = 42, device:str = None)->GPTMOE:
 
     return model
 
+
+if __name__=='__main__':
+
+    print(list(os.scandir()))
+    run('E1', seed = 42, device = 'cuda')
