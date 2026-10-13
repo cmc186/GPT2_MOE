@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 # Conduct relative imports
-from .own_loss import OwnLoss
+from . import OwnLoss
 
 class LossSelector():
 
@@ -21,7 +21,7 @@ class LossSelector():
         match name:
 
             case 'ce':
-                return nn.CrossEntropyLoss
+                return nn.CrossEntropyLoss()
 
             case 'own':
                 return OwnLoss

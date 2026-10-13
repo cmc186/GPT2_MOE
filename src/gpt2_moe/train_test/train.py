@@ -8,7 +8,7 @@ import torch
 from gpt2_moe.model import GPTMOE
 from gpt2_moe.train_test.utils import Utils
 from gpt2_moe.train_test.losses import LossSelector
-from gpt2_moe.train_test.config import ATTR, TRAIN, TASKS, EXPERIMENTS
+from gpt2_moe.train_test.config import MODEL_ATTR, TRAIN, TASKS, EXPERIMENTS
 
 # Paths (launch from the repo root, as data/)
 BASE_PATH = 'src/gpt2_moe/checkpoints'
@@ -32,66 +32,84 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
                 Where the best weights are stored
             device(str):
                 cuda or cpu
+        Returns:
+            None:
+                No value is returned
     """
+    # Extract loaders
     train_loader, val_loader, _ = loaders
+    # Define storing paths
+    model_storing_path = os.path.join(path, '.pth')
+    data_storing_path = os.path.join(path, '_history.json')
 
     # 1. FREEZING AND ROUTING
     Utils.freeze_selective(model = model, groups = stage['groups'])
     model.set_forced_expert(stage['expert'])
 
     # 2. OPTIMIZER AND LOSS
+    # 2.1 Pass only the trainable parameters
     trainable = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable, lr = train_params['lr'])
-    loss_params = {'moe_layers': model.moe_layers()} if stage['loss'] == 'own' else {}
-    loss_fn = LossSelector.loss_selector(stage['loss'], loss_params)
+    # 2.2 Initialize the loss
+    loss_fn = LossSelector.loss_selector(stage['loss'],  {'moe_layers': model.moe_layers()} if stage['loss'] == 'balanced_loss' else {})
+
 
     # 3. TRAINING
     history = []
+    model.train()
     best_val_loss = float('inf')
 
     for epoch in range(train_params['epochs']):
-
         # Training data
-        model.train()
         train_loss = 0
+        # Iterate per batch
         for batch in train_loader:
+            # Retrieve data 
             inputs = batch['input_ids'].to(device)
             targets = batch['target_ids'].to(device)
-            # Feed
+            # Feed the model (B, N, V)
             logits = model(inputs)
             # Loss (B, N, V) -> (B*N, V)
             loss = loss_fn(logits.flatten(0, 1), targets.flatten())
-            # Update
+            # Compute loss
             optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(trainable, max_norm = 1.0)
+            # Optimizer step
             optimizer.step()
+            # Update loss
             train_loss += loss.item()
 
         # Validation data
         model.eval()
         val_loss = 0
         with torch.no_grad():
+            # Feed val batches to the model
             for batch in val_loader:
+                # Retrieve data
                 inputs = batch['input_ids'].to(device)
                 targets = batch['target_ids'].to(device)
+                # Get output (B, N, V)
                 logits = model(inputs)
+                # Compute loss
                 val_loss += loss_fn(logits.flatten(0, 1), targets.flatten()).item()
 
-        # Mean per batch
+        # Mean loss per batch
         train_loss /= len(train_loader)
         val_loss /= len(val_loader)
+        # Store values
         history.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss})
         print(f"·({stage['name']}) epoch {epoch}: train {train_loss:.4f} | val {val_loss:.4f}")
 
-        # 4. STORING -> only when validation improves
+        # 4. STORING -> validation triggered
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), path)
+            # Save the model
+            torch.save(model.state_dict(), model_storing_path)
 
-    # Restore routing and store the loss history
+    # Restore routing 
     model.set_forced_expert(None)
-    with open(path.replace('.pth', '_history.json'), 'w') as f:
+    # Store the loss history
+    with open(data_storing_path, 'w') as f:
         json.dump(history, f, indent = 2)
 
 
@@ -111,36 +129,46 @@ def run(name:str, seed:int = 42, device:str = None)->GPTMOE:
             model(GPTMOE):
                 The model after the last stage
     """
+    # Retrieve the experiment (E1, E2, E3)
     experiment = EXPERIMENTS[name]
+    # Select the device
     device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
     # Seed before building -> router and random init are reproducible
-    torch.manual_seed(seed)
+    Utils.seed_setter(seed)
 
-    # 1. BUILD AND INITIALIZE
-    model = GPTMOE(ATTR)
+    # 1. BUILD AND INITIALIZE: config from config.py
+    model = GPTMOE(MODEL_ATTR)
+    # Load GPT2 base weights
     if experiment['init'] == 'gpt2':
-        Utils.load_weights(model = model, name = GPT2_NAME, base_path = BASE_PATH, blocks = ATTR['n_layers'])
+        # Switch loading mode 
+        Utils.load_weights(model = model, name = GPT2_NAME, base_path = BASE_PATH, blocks = MODEL_ATTR['n_layers'], load_mod = experiment['load_modality'])
+    # Move model to the selected device
     model.to(device)
 
-    # Folder for this run 
+    # 2. ENSURE STORING PATH (gpt2_moe/checkpoints)
     run_path = os.path.join(BASE_PATH, name, f'seed_{seed}')
     Utils.ensure_path(run_path)
 
-    # 2. STAGES
+    # 3. STAGES PHASE
     for stage in experiment['stages']:
-        path = os.path.join(run_path, f"{stage['name']}.pth")
+        # Define the path for the stage
+        path = os.path.join(run_path, f"{stage['name']}")
 
         # Stage already trained -> skip
         if not os.path.exists(path):
             print(f"\n(run) STAGE {stage['name']}")
             # Stage values override the common ones
             train_params = {**TRAIN, **stage.get('train', {})}
+            # Get DataLoaders
             loaders = Utils.get_loaders(tasks = stage['tasks'] or TASKS, batch_size = train_params['bs'],
-                                        context_length = ATTR['context_length'], seed = seed)
+                                        context_length = MODEL_ATTR['context_length'], seed = seed
+                                    )
+
+            # Call training
             train_stage(model, stage, train_params, loaders, path, device)
 
         # Next stage starts from the best weights of this one
-        model.load_state_dict(torch.load(path, map_location = device, weights_only = True))
+        model.load_state_dict(torch.load(path + '.pth', weights_only = True))
 
     return model
 

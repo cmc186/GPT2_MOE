@@ -1,8 +1,11 @@
-# Tasks in fixed order -> expert i is trained on TASKS[i]
+# File aimed to store the basic configurations for training launch
+
+
+# 1. TASKS   -> expert i is trained on task_i
 TASKS = ["add_sub", "mul_div", "alphabetic", "spell", "parity", "first_last"]
 
-# Model attributes -> same structure for the three experiments
-ATTR = {
+# 2. MODEL ATTRS    
+MODEL_ATTR = {
     "vocab_size": 50257,
     "context_length": 1024,
     "n_layers": 12,
@@ -25,7 +28,7 @@ ATTR = {
     },
 }
 
-# Training params shared by every stage
+# 3. HYPERPARAMETERS
 TRAIN = {"epochs": 10, "bs": 8, "lr": 3e-4}
 
 # One stage per expert: expert i only sees task i, router skipped
@@ -36,25 +39,28 @@ EXPERT_STAGES = [
 
 # Experiments -> init mode + ordered list of stages
 EXPERIMENTS = {
-    # 1- Experts one by one, then router + FF
+    # 1) Experts one by one, then router + FF
     "E1": {
         "init": "gpt2",
+        "load_modality":False,
         "stages": EXPERT_STAGES + [
-            {"name": "router_ffn", "groups": ["router", "ffn"], "expert": None, "tasks": None, "loss": "own"},
+            {"name": "router_ffn", "groups": ["router", "ffn"], "expert": None, "tasks": None, "loss": "balanced_loss"},
         ],
     },
-    # 2- Experts one by one, then router only (FF always frozen)
+    # 2) Experts one by one, then router only (FF always frozen)
     "E2": {
         "init": "gpt2",
+        "load_modality":True,
         "stages": EXPERT_STAGES + [
-            {"name": "router", "groups": ["router"], "expert": None, "tasks": None, "loss": "own"},
+            {"name": "router", "groups": ["router"], "expert": None, "tasks": None, "loss": "balanced_loss"},
         ],
     },
-    # 3- Everything at once from random weights
+    # 3) Everything at once from random weights
     "E3": {
         "init": "random",
         "stages": [
-            {"name": "joint", "groups": ["base", "ffn", "experts", "router"], "expert": None, "tasks": None, "loss": "own"},
+            {"name": "joint", "groups": ["base", "ffn", "experts", "router"], "expert": None, "tasks": None, "loss": "balanced_loss"},
         ],
     },
+    #4) Random con stages --> to add
 }
