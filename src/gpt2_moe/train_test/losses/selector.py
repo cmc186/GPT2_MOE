@@ -1,8 +1,8 @@
-# Basic Import 
+# Basic Import
 import torch
 import torch.nn as nn
 
-# Conduct relative imports 
+# Conduct relative imports
 from .own_loss import OwnLoss
 
 class LossSelector():
@@ -14,14 +14,14 @@ class LossSelector():
     @staticmethod
     def loss_selector(name:str, params:dict)->nn.Module:
 
-        # Preprocess input 
+        # Preprocess input
         name = name.lower()
 
         # Return an uninitialized loss
         match name:
 
             case 'ce':
-                return nn.CrossEntropyLoss 
+                return nn.CrossEntropyLoss
 
             case 'own':
                 return OwnLoss

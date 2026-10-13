@@ -23,41 +23,37 @@ class Router(nn.Module):
         self.softmax = nn.Softmax(dim = -1)
 
 
+
+
     def forward(self, x:torch.Tensor)->torch.Tensor:
-
-        '''  
-            By setting n_experts to one during training, we force
-            the router to select the expert we want
-        
         '''
-        # Get the first dim
-        first_dim = x.shape[0]
-        # Input (B*N_tokens, dk) --> (B*N_tokens, NExperts)
-        x = self.linear(x)
-        print(f'(router) Output of the linear:{x.shape}')
+        Forward pass for the router.
 
-        # Get the top-k over logits
-        top_k_values, top_k_indices  = torch.topk(x, k = self.k, dim = 1)
-        print(f'(router) Output of the top_k:{top_k_values.shape}--({top_k_indices.shape})')
-        
-        # Create -inf matrix
-        inf_mask = torch.full_like(x, fill_value = float('-inf'))
-        print(f'(router) Aspect of the -inf mask:{inf_mask.shape}')
+        Parameters:
+        -----------
+        x : torch.Tensor
+            Input tensor of shape (B*N_tokens, dk)
 
-        # Unmasking experts belonging to the top-k
-        print(f'(router) BUILDING INDEXING MECHANISM')
-        # 1. Create arange for indexing (B*N_tokens, 1)
-        first_index = torch.arange(0, first_dim).unsqueeze(-1)
-        print(f'(router) ·Aspect of the first index:{first_index.shape}')
-        # 2. Second index shape (B*Ntokens, experts) -> allowed broadcast
-        print(f'(router) ·Aspect of the second index:{top_k_indices.shape}')
-        # 3. Set selected experts to their values 
-        masked_logits = inf_mask[first_index, top_k_indices] = top_k_values
-        print(f'(router) ·Aspect of the later inf maskk:{inf_mask.shape}')
+        Returns:
+        --------
+        tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+            Returns the top-k weights, the top-k indices, and the full probability distribution over the experts.
 
-        # Compute the probabilities 
-        top_k_weights = self.softmax(masked_logits)
-        print(f'(router) Aspect of the normalized weights:{top_k_weights.shape}')
+        '''
 
+        # Input (B*N_tokens, dk) --> (B*N_tokens, N_experts)
+        logits = self.linear(x)
 
-        return top_k_weights, top_k_indices
+        # Probabilities over all the experts (B*N_tokens, N_experts)
+        probs = self.softmax(logits)
+
+        # Get the top-k over probabilities (B*N_tokens, k)
+        top_k_probs, top_k_indices = torch.topk(probs, k = self.k, dim = -1)
+
+        # Normalize within the top-k experts.
+        if self.k > 1:
+            top_k_weights = top_k_probs / top_k_probs.sum(dim = -1, keepdim = True)
+        else:
+            top_k_weights = top_k_probs
+
+        return top_k_weights, top_k_indices, probs

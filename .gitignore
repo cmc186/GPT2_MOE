@@ -25,6 +25,7 @@ wandb/
 *.pt
 *.pth
 *.ckpt
+src/gpt2_moe/checkpoints/
 
 # VS Code: compartir solo la configuración común
 .vscode/*
@@ -34,4 +35,4 @@ wandb/
 *Zone.Identifier
 Thumbs.db
 desktop.ini
-.DS_Storesrc/gpt2_moe/checkpoints/
+.DS_Store
