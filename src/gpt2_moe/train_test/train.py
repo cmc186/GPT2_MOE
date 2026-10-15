@@ -9,8 +9,8 @@ from pathlib import Path
 # File system imports
 from gpt2_moe.model import GPTMOE
 from gpt2_moe.train_test.utils import Utils
+from gpt2_moe.train_test.configs import ExperimentConfig
 from gpt2_moe.train_test.losses import LossSelector
-from gpt2_moe.train_test.config import MODEL_ATTR, TRAIN, TASKS, EXPERIMENTS
 
 # Get 2nd parent of the current file and build from there
 parent_path = Path(__file__).parents[1].resolve()
@@ -22,7 +22,8 @@ GPT2_NAME = 'gpt2-small-124M.pth'
 parser = argparse.ArgumentParser()
 # Add the arguments
 parser.add_argument('--exp', help = 'Select experiment name (E1,E2,E3)', default = 'E1', choices = ['E1', 'E2', 'E3'])
-parser.add_argument('--dev', help = 'Select default device', default = 'E1', choices = ['cuda', 'cpu'])
+parser.add_argument('--dev', help = 'Select default device', default = 'cuda', choices = ['cuda', 'cpu'])
+parser.add_argument('--name', help = 'Name of the config yaml', default = 'base.yaml')
 parser.add_argument('--seed', help = 'Select seed', default = 42)
 
 # Retrieve the arguments
@@ -30,13 +31,16 @@ args = parser.parse_args()
 seed = args.seed
 exp = args.exp
 dev = args.dev
+name = args.name
 
 # Info printing
 print(f'(args) Selected seed ({seed})')
 print(f'(args) Selected experiment ({exp})')
 print(f'(args) Selected device ({dev})')
+print(f'(args) Selected yaml ({name})')
 
-
+# Initialize configurator
+configurator = ExperimentConfig(name = name)
 
 
 
@@ -123,7 +127,7 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
         val_loss /= len(val_loader)
         # Store values
         history.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss})
-        print(f"·({stage['name']}) epoch {epoch}: train {train_loss:.4f} | val {val_loss:.4f}")
+        print(f" ·({stage['name']}) epoch {epoch}: train {train_loss:.4f} | val {val_loss:.4f}")
 
         # 4. STORING -> validation triggered
         if val_loss < best_val_loss:
@@ -138,59 +142,71 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
         json.dump(history, f, indent = 2)
 
 
-def run(name:str, seed:int = 42, device:str = None)->GPTMOE:
+def run(seed:int = 42, device:str = 'cpu')->GPTMOE:
     """
         Function aimed to run a whole experiment
 
         Params:
-            name(str):
-                Experiment name (E1, E2, E3)
             seed(int):
                 Seed for init, split and shuffle
             device(str):
-                cuda or cpu. None -> cuda if available
+                 Switch between cuda or cpu
+                Default value is 'cpu' 
 
         Returns:
             model(GPTMOE):
                 The model after the last stage
     """
-    # Retrieve the experiment (E1, E2, E3)
-    experiment = EXPERIMENTS[name]
-    # Select the device
+
+    # Get the device
     device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
-    # Seed before building -> router and random init are reproducible
+
+    # Seeding the model
     Utils.seed_setter(seed)
 
-    # 1. BUILD AND INITIALIZE: config from config.py
-    model = GPTMOE(MODEL_ATTR)
-    # Load GPT2 base weights
-    if experiment['init'] == 'gpt2':
+
+    # Retrieve model params and experiments
+    model_params = configurator.get_model_params()
+    hyperparams = configurator.get_train()
+    # Debug prints
+    print('DEBUG PRINTS')
+    print('·The params:', model_params)
+    print('·The hp:', hyperparams)
+    print('·The init mode:', configurator.init_mode)
+    print('·The load modality:', configurator.load_modality)
+    print('·The name:', configurator.name)
+
+    for i, stage in enumerate(configurator):
+        print(f'(·Stage{i}):{stage}')
+
+    # 1. BUILD AND INITIALIZE
+    model = GPTMOE(configurator.get_model_params())
+
+    # Load weights if required 
+    if configurator.init_mode == 'gpt2':
         # Switch loading mode 
-        Utils.load_weights(model = model, name = GPT2_NAME, base_path = BASE_PATH, blocks = MODEL_ATTR['n_layers'], load_mod = experiment['load_modality'])
+        Utils.load_weights(model = model, name = GPT2_NAME, base_path = BASE_PATH, blocks = model_params['n_layers'], load_mod = configurator.load_modality)
     # Move model to the selected device
     model.to(device)
 
-    # 2. ENSURE STORING PATH (gpt2_moe/checkpoints)
+    # 2. ENSURE STORING PATH (gpt2_moe/checkpoints/name/seed)
+    name = configurator.name
     run_path = os.path.join(BASE_PATH, name, f'seed_{seed}')
     Utils.ensure_path(run_path)
 
     # 3. STAGES PHASE
-    for stage in experiment['stages']:
+    for stage in configurator:
         # Define the path for the stage
         path = os.path.join(run_path, f"{stage['name']}")
-
-        # Stage already trained -> skip
+        # Check existance
         if not os.path.exists(path):
             print(f"\n(run) STAGE {stage['name']}")
-            # Stage values override the common ones
-            train_params = {**TRAIN, **stage.get('train', {})}
-            # Get DataLoaders
-            loaders = Utils.get_loaders(tasks = stage['tasks'] or TASKS, batch_size = train_params['bs'],
-                                        context_length = MODEL_ATTR['context_length'], seed = seed
+            # Get DataLoaders: in case != expert then train with everything
+            loaders = Utils.get_loaders(tasks = stage['tasks'] or configurator.TASKS, batch_size = hyperparams['bs'],
+                                        context_length = model_params['context_length'], seed = seed
                                     )
-
             # Call training
-            train_stage(model, stage, train_params, loaders, path, device)
+            train_stage(model = model, stage = stage, train_params = hyperparams, loaders = loaders, path = path, device = device)
 
         # Next stage starts from the best weights of this one
         model.load_state_dict(torch.load(path + '.pth', weights_only = True))
@@ -199,6 +215,4 @@ def run(name:str, seed:int = 42, device:str = None)->GPTMOE:
 
 
 if __name__=='__main__':
-
-    print(list(os.scandir()))
-    run('E1', seed = 42, device = 'cuda')
+    run(seed = 42, device = 'cuda')

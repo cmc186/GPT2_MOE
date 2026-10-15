@@ -493,4 +493,3 @@ class Utils:
 
         # Set the seed
         torch.manual_seed(seed)
-

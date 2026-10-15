@@ -1,0 +1,43 @@
+# Define the model attributes
+MODEL_ATTR:
+    vocab_size: 50257
+    context_length: 1024
+    n_layers: 12
+    emb_dim: 768
+    dropout: 0.1
+    ffn_hidden_dim: null
+    moe_mask: 
+        schedule: "alternate"
+        offset: 2
+
+    attention_related:
+        num_heads: 12
+        dropout: 0.1
+        qkv_bias: True
+    
+    moe_related:
+        experts: 6
+        k_routing: 2
+        hidden_dim: null
+
+
+# Define the train hyperparameter
+TRAIN:
+  epochs: 100
+  bs: 10
+  lr: 0.00003
+
+# Define config
+EXPCONFIG:
+  name: 'RandomTrain'
+  init_mode: random
+  load_modality: True
+  stages: 
+    - name: "full"
+      groups: ["base", "ffn", "experts", "router"]
+      expert: null
+      tasks: null
+      loss: ce
+
+  
+
