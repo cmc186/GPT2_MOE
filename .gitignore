@@ -20,12 +20,12 @@ env/
 .ipynb_checkpoints/
 
 # Modelos y resultados del entrenamiento
-checkpoints/
 runs/
 wandb/
 *.pt
 *.pth
 *.ckpt
+src/gpt2_moe/checkpoints/
 
 # VS Code: compartir solo la configuración común
 .vscode/*

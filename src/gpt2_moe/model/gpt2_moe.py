@@ -1,5 +1,5 @@
 import torch
-import torch.nn as nn 
+import torch.nn as nn
 
 
 # File System Imports
@@ -35,25 +35,35 @@ class GPTMOE(nn.Module):
     def forward(self, in_idx:torch.Tensor)->torch.Tensor:
 
         # Get input dims (B, N)
-        batch_size, seq_len = in_idx.shape
+        _, seq_len = in_idx.shape
         # Embed the inputs (B, N, de)
         # 1. Get contextual embeddings
         tok_embeds = self.tok_emb(in_idx)
-        
+
         # 2. Get positional embeddings
-        print(f'(GPT)CREATING EMBEEDINGS')
         pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
         x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
         x = self.drop_emb(x)
-        print(f'(GPT)Aspect of the embeddings:{x.shape}')
 
         # 3. Go trought transformer blocks (B, N, de) -> (B, N, de)
         x = self.trf_blocks(x)
-        print(f'(GPT)Output of the trf blocks:{x.shape}')
         x = self.final_norm(x)
 
         # Get logits (B, N, de) ->(B, N, |V|)
         logits = self.out_head(x)
-        print(f'(GPT)Aspect of the logits space:{x.shape}')
 
         return logits
+
+    def moe_layers(self)->list[nn.Module]:
+        """
+            Returns the MoE modules ordered by layer
+        """
+        return [block.ff for block in self.trf_blocks if block.use_moe]
+
+    def set_forced_expert(self, idx:int|None)->None:
+        """
+            Forces every MoE layer to use expert idx.
+            None restores the normal routing
+        """
+        for moe in self.moe_layers():
+            moe.forced_expert = idx

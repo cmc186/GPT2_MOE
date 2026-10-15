@@ -1,17 +1,17 @@
 def moe_mask(layers:int, schedule:str, offset:int = 1)->list[bool]:
-    """  
-        Function aimed to point out 
-        where MOE blocks should be 
-        included. 
+    """
+        Function aimed to point out
+        where MOE blocks should be
+        included.
 
-        The function takes the total 
+        The function takes the total
         amount of layers and a MOE
-        generation schedule. Then, a list 
+        generation schedule. Then, a list
         of bool values is returned:
 
         **True**: MoE in layer i
 
-        **False**: FFN in layer i 
+        **False**: FFN in layer i
 
         ### The accepted schedules are
 
@@ -36,7 +36,7 @@ def moe_mask(layers:int, schedule:str, offset:int = 1)->list[bool]:
             A tuple of:
                 - list[bool]: List representing MoE location
     """
-    # Check if casual option matches
+        # Check if casual option matches
     if isinstance(schedule, str):
         cleaned_request = schedule.lower()
 
@@ -50,13 +50,19 @@ def moe_mask(layers:int, schedule:str, offset:int = 1)->list[bool]:
                 # No MoE included
                 return [False]*layers
             case 'alternate':
+                # Avoid modulo by zero
+                if offset < 1:
+                    raise ValueError(f'offset must be >= 1, got {offset}')
                 return [(i%offset)==0 for i in range(layers)]
+            case _:
+                raise ValueError(f"Unknown schedule '{schedule}'. Valid: 'all', 'none', 'alternate' or list[int]")
 
     # Case manual embedding is provided -> list of indices
-    # 1. Check range valid
-    minimum = min(schedule)
-    maximum = max(schedule)
-    if (minimum>=0) and (maximum<=(layers-1)):
-        return [i in schedule for i in range(layers)]
-    
-    print(f'Mask indices are not within layers range(0-{layers})')
+    # Check not empty
+    if not schedule:
+        raise ValueError('Manual schedule must be a non-empty list of layer indices')
+    # Check range valid
+    if min(schedule) < 0 or max(schedule) > layers - 1:
+        raise ValueError(f'Mask indices must be within range 0-{layers-1}, got {schedule}')
+
+    return [i in schedule for i in range(layers)]

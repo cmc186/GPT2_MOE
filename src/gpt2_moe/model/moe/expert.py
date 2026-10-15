@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 
-# Relative imports 
+# Relative imports
 from ..activations import GELU
 
 class Expert(nn.Module):
@@ -26,11 +26,9 @@ class Expert(nn.Module):
 
         # First Linear Layer (B*N, dk)-->(B*N, dhidden)
         x = self.activation(self.l1(x))
-        print(f'(expert) Output of the first linear:{x.shape}')
 
 
         # Second Linear Layer (B* N, dk)-->(B*N, dhidden)
         x = self.l2(x)
-        print(f'(expert) Output of the second linear:{x.shape}')
 
         return x
