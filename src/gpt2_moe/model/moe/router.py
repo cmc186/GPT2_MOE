@@ -26,20 +26,6 @@ class Router(nn.Module):
 
 
     def forward(self, x:torch.Tensor)->torch.Tensor:
-        '''
-        Forward pass for the router.
-
-        Parameters:
-        -----------
-        x : torch.Tensor
-            Input tensor of shape (B*N_tokens, dk)
-
-        Returns:
-        --------
-        tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-            Returns the top-k weights, the top-k indices, and the full probability distribution over the experts.
-
-        '''
 
         # Input (B*N_tokens, dk) --> (B*N_tokens, N_experts)
         logits = self.linear(x)

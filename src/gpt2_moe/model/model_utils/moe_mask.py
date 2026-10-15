@@ -50,12 +50,12 @@ def moe_mask(layers:int, schedule:str, offset:int = 1)->list[bool]:
                 # No MoE included
                 return [False]*layers
             case 'alternate':
-                # Avoid modulo by zero
+                # Avoid negative offsett
                 if offset < 1:
-                    raise ValueError(f'offset must be >= 1, got {offset}')
+                    raise ValueError(f'offset must be >= 1::{offset}')
                 return [(i%offset)==0 for i in range(layers)]
             case _:
-                raise ValueError(f"Unknown schedule '{schedule}'. Valid: 'all', 'none', 'alternate' or list[int]")
+                raise ValueError(f"Unknown schedule '{schedule}' -->('all', 'none', 'alternate' or list[int])")
 
     # Case manual embedding is provided -> list of indices
     # Check not empty

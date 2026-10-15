@@ -7,7 +7,7 @@ import os
 from gpt2_moe.data.tokenizer import Tokenizer
 
 
-
+# Define dir for data
 DATA_DIR = "data" 
 
 

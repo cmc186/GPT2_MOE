@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 # Conduct relative imports 
-from .own_scorer import OwnScorer
+from .jenser_divergence import JensenDivergence
 
 class LossSelector():
 
@@ -19,9 +19,8 @@ class LossSelector():
 
         # Return a scorer
         match name:
-
-            case 'own':
-                return OwnScorers
+            case 'jsd':
+                return JensenDivergence()
 
 
 

@@ -56,14 +56,28 @@ class GPTMOE(nn.Module):
 
     def moe_layers(self)->list[nn.Module]:
         """
-            Returns the MoE modules ordered by layer
+            Function aimed to return the MoE modules 
+            ordered by layer
+
+
+            Returns:
+                output (list(nn.Module)):
+                    The list of modules     
         """
         return [block.ff for block in self.trf_blocks if block.use_moe]
 
-    def set_forced_expert(self, idx:int|None)->None:
+    def set_forced_expert(self, idx:int)->None:
         """
-            Forces every MoE layer to use expert idx.
-            None restores the normal routing
+            Function aimed to force an indexed 
+            expert beyond all MoE blocks. Setting 
+            the value to None restores the original 
+            routing
+
+            Params:
+                idx(int):
+                    The index of the expert to force
+            
         """
+        # Forcing the experts
         for moe in self.moe_layers():
             moe.forced_expert = idx

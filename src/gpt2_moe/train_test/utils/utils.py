@@ -60,8 +60,9 @@ class Utils:
 
         # Assign weights
         return nn.Parameter(right)
+    
     @staticmethod
-    def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int)->None:
+    def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int, load_mod:bool)->None:
         """
             Function aimed to load weights into a given
             model. GPT skeleton architecture is expected
@@ -78,6 +79,9 @@ class Utils:
 
                 blocks (int):
                     The amount of tf blocks to initialize
+
+                load_mod (bool):
+                    Decided whether FFN are loaded or not
 
             Returns:
                 None:
@@ -108,7 +112,7 @@ class Utils:
 
         # Initialize tf blocks
         for i in range(blocks):
-            # MHA Block
+            # MHA BLOCK
             # Initialize query
             model.trf_blocks[i].att.W_query.weight = Utils.assign(model.trf_blocks[i].att.W_query.weight,
                                                             params[f"trf_blocks.{i}.att.W_query.weight"])
@@ -132,32 +136,34 @@ class Utils:
             model.trf_blocks[i].att.out_proj.bias = Utils.assign( model.trf_blocks[i].att.out_proj.bias, params[f"trf_blocks.{i}.att.out_proj.bias"])
 
 
-            # Initialize normalizations (layer norm 1 and 2)
+            # Initialize normalizations (within tf blocks)
             model.trf_blocks[i].norm1.scale = Utils.assign(model.trf_blocks[i].norm1.scale, params[f"trf_blocks.{i}.norm1.scale"])
             model.trf_blocks[i].norm1.shift = Utils.assign(model.trf_blocks[i].norm1.shift, params[f"trf_blocks.{i}.norm1.shift"])
             model.trf_blocks[i].norm2.scale = Utils.assign(model.trf_blocks[i].norm2.scale, params[f"trf_blocks.{i}.norm2.scale"])
             model.trf_blocks[i].norm2.shift = Utils.assign(model.trf_blocks[i].norm2.shift, params[f"trf_blocks.{i}.norm2.shift"])
 
-            # Feed forward: FF layer or every expert
-            ff = model.trf_blocks[i].ff
-            w1 = params[f"trf_blocks.{i}.ff.layers.0.weight"]
-            b1 = params[f"trf_blocks.{i}.ff.layers.0.bias"]
-            w2 = params[f"trf_blocks.{i}.ff.layers.2.weight"]
-            b2 = params[f"trf_blocks.{i}.ff.layers.2.bias"]
+            # Load_mod is true when freezed FFN are required
+            if load_mod:
+                # FF block -> only want to load it when E2: FF always frozen
+                ff = model.trf_blocks[i].ff
+                # Load the ffn layers
+                ff.ffn[0].weight = Utils.assign(ff.ffn[0].weight, params[f"trf_blocks.{i}.ff.layers.0.weight"])
+                ff.ffn[0].bias = Utils.assign(ff.ffn[0].bias, params[f"trf_blocks.{i}.ff.layers.0.bias"])
+                ff.ffn[2].weight = Utils.assign(ff.ffn[2].weight, params[f"trf_blocks.{i}.ff.layers.2.weight"])
+                ff.ffn[2].bias = Utils.assign(ff.ffn[2].bias, params[f"trf_blocks.{i}.ff.layers.2.bias"])
 
-            if model.moe_mask[i]:
-                for expert in ff.experts:
-                    # clone -> each expert gets its own copy
-                    expert.l1.weight = Utils.assign(expert.l1.weight, w1.clone())
-                    expert.l1.bias = Utils.assign(expert.l1.bias, b1.clone())
-                    expert.l2.weight = Utils.assign(expert.l2.weight, w2.clone())
-                    expert.l2.bias = Utils.assign(expert.l2.bias, b2.clone())
-            else:
-                ff.ffn[0].weight = Utils.assign(ff.ffn[0].weight, w1)
-                ff.ffn[0].bias = Utils.assign(ff.ffn[0].bias, b1)
-                ff.ffn[2].weight = Utils.assign(ff.ffn[2].weight, w2)
-                ff.ffn[2].bias = Utils.assign(ff.ffn[2].bias, b2)
-
+            '''
+                We do not want experts Fine Tuning
+                if model.moe_mask[i]:
+                    for expert in ff.experts:
+                        # clone -> each expert gets its own copy
+                        expert.l1.weight = Utils.assign(expert.l1.weight, w1.clone())
+                        expert.l1.bias = Utils.assign(expert.l1.bias, b1.clone())
+                        expert.l2.weight = Utils.assign(expert.l2.weight, w2.clone())
+                        expert.l2.bias = Utils.assign(expert.l2.bias, b2.clone())
+            '''
+           
+    '''
     @staticmethod
     def load_block(model:GPTMOE, base_path:str, block_idx:int, version:str)->None:
         """
@@ -233,7 +239,6 @@ class Utils:
             ffn_state_dict = torch.load(full_path, weights_only = True)
             # Load the state dict into a selected model's module
             block.ffn.load_state_dict(ffn_state_dict)
-
     @staticmethod
     def load_all(model:GPTMOE, base_path:str, version:str)->None:
         """
@@ -273,7 +278,7 @@ class Utils:
             # Loading each block
             print(f'·(blocks_loader)Loading block ({i})')
             Utils.load_block(model, base_path = base_path, block_idx = i, version = version)
-
+    '''
     @staticmethod
     def freeze_selective(model:GPTMOE, groups:list[str])->None:
         """
@@ -291,35 +296,35 @@ class Utils:
                 model(GPTMOE):
                     The model to work with
                 groups(list[str]):
-                    The groups to train
+                    The  defined groups to train
             Returns:
                 None:
                     No value is returned
         """
-        # Check group names
-        valid = {'base', 'ffn', 'experts', 'router'}
-        if not set(groups) <= valid:
-            raise ValueError(f'Unknown groups {set(groups) - valid}. Valid: {valid}')
 
         # Freeze the whole model
         model.requires_grad_(False)
 
-        # Base -> everything except the ff part of each block
+        # Base model
         if 'base' in groups:
+            # Unfreeze the model
             model.requires_grad_(True)
+            # Setting trf blocks to false waiting for other triggers
             for block in model.trf_blocks:
                 block.ff.requires_grad_(False)
 
         # Heat the requested ff parts
         for block in model.trf_blocks:
+            # Heating MoE
             if block.use_moe:
                 if 'experts' in groups:
                     block.ff.experts.requires_grad_(True)
                 if 'router' in groups:
                     block.ff.gate.requires_grad_(True)
+            # Heating the FFN
             elif 'ffn' in groups:
                 block.ff.requires_grad_(True)
-
+    '''
     @staticmethod
     def params_storage(model:GPTMOE, base_path:str, version:str, train_mode:bool, id:int)->None:
         """
@@ -379,7 +384,7 @@ class Utils:
             path_name = os.path.join(path, name)
             # Store the whole model with the trained router
             torch.save(name, path_name)
-
+    '''
     @staticmethod
     def ensure_path(path:str)->None:
         """
@@ -451,7 +456,7 @@ class Utils:
 
             Params:
                 tasks(list[str]):
-                    The task names (CSV names without extension)
+                    The task names (names must match csvs)
                 batch_size(int):
                     Examples per batch
                 context_length(int):
@@ -471,18 +476,21 @@ class Utils:
                           seed = seed, datasets = datasets)
         return data.get_loaders()
 
+    @staticmethod
+    def seed_setter(seed:int)->None:
+        """ 
+            Function aimed to ensure experiment's 
+            reproducibility
 
+            Params:
+                seed(int):
+                    The selected seed
 
+            Returns:
+                None:
+                    No value is returned
+        """
 
-
-
-
-
-
-
-
-
-
-
-
+        # Set the seed
+        torch.manual_seed(seed)
 
