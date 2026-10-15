@@ -63,10 +63,11 @@ class TaskDataset(Dataset):
         for self.current, path in enumerate(self.datasets):
 
             # Read everything as text
-            df = pd.read_csv(path, dtype=str, keep_default_na=False)
+            df = pd.read_csv(path, dtype=str)
             # Add a column with the task name
             df["task"] = os.path.splitext(os.path.basename(path))[0]
 
+            # Store rows per csv
             self.rows_per_csv[path] = len(df)
             frames.append(df)
 
@@ -83,19 +84,25 @@ class TaskDataset(Dataset):
         --------
             pd.DataFrame: A DataFrame containing only the rows of the specified split
         '''
+        # Get split names
         names = list(self.splits)
+        # Get index por work-split
         i = names.index(self.split)
+        # Get cumulative proportion until :selected_split
         start_frac = sum(self.splits[name] for name in names[:i])
         end_frac = start_frac + self.splits[self.split]
-        is_last = i == len(names) - 1
+        # Check if it is the last split
+        is_last = (i == len(names) - 1)
 
         parts = []
         # Each task is split separately so every task keeps the fractions
         for _, group in df.groupby("task"):
-            group = group.sample(frac=1.0, random_state=self.seed)   # same shuffle every time
+            # Shuffles selected rows 
+            group = group.sample(frac = 1.0, random_state = self.seed)
+            # Get indices start:end   
             n = len(group)
             start = int(n * start_frac)
-            # The last split takes everything left, so no row is lost by rounding
+            # The last split takes everything left
             end = n if is_last else int(n * end_frac)
             parts.append(group.iloc[start:end])
         return pd.concat(parts, ignore_index=True)
@@ -176,6 +183,7 @@ class TaskDataset(Dataset):
         --------
             dict[str, torch.Tensor | int]: A dictionary containing the input IDs, target IDs, and task index
         '''
+        # Retrieve the previously created prompts
         input_ids, target_ids, task = self.examples[idx]
         return {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
