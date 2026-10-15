@@ -3,6 +3,8 @@ import os
 import sys
 import json
 import torch
+import argparse
+from pathlib import Path
 
 # File system imports
 from gpt2_moe.model import GPTMOE
@@ -10,9 +12,32 @@ from gpt2_moe.train_test.utils import Utils
 from gpt2_moe.train_test.losses import LossSelector
 from gpt2_moe.train_test.config import MODEL_ATTR, TRAIN, TASKS, EXPERIMENTS
 
-# Paths (launch from the repo root, as data/)
-BASE_PATH = "./gpt2_moe/checkpoints/"
+# Get 2nd parent of the current file and build from there
+parent_path = Path(__file__).parents[1].resolve()
+BASE_PATH = os.path.join(parent_path, "checkpoints")
 GPT2_NAME = 'gpt2-small-124M.pth'
+
+
+# Define the parser
+parser = argparse.ArgumentParser()
+# Add the arguments
+parser.add_argument('--exp', help = 'Select experiment name (E1,E2,E3)', default = 'E1', choices = ['E1', 'E2', 'E3'])
+parser.add_argument('--dev', help = 'Select default device', default = 'E1', choices = ['cuda', 'cpu'])
+parser.add_argument('--seed', help = 'Select seed', default = 42)
+
+# Retrieve the arguments
+args = parser.parse_args()
+seed = args.seed
+exp = args.exp
+dev = args.dev
+
+# Info printing
+print(f'(args) Selected seed ({seed})')
+print(f'(args) Selected experiment ({exp})')
+print(f'(args) Selected device ({dev})')
+
+
+
 
 
 def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path:str, device:str)->None:
@@ -39,8 +64,8 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
     # Extract loaders
     train_loader, val_loader, _ = loaders
     # Define storing paths
-    model_storing_path = os.path.join(path, '.pth')
-    data_storing_path = os.path.join(path, '_history.json')
+    model_storing_path = path + '.pth'
+    data_storing_path = path + '_history.json'
 
     # 1. FREEZING AND ROUTING
     Utils.freeze_selective(model = model, groups = stage['groups'])
