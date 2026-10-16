@@ -1,6 +1,5 @@
 # Basic Imports
 import os
-import torch
 import yaml
 from pathlib import Path
 

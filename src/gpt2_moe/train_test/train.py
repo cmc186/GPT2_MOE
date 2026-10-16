@@ -80,15 +80,17 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
     trainable = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable, lr = train_params['lr'])
     # 2.2 Initialize the loss
-    loss_fn = LossSelector.loss_selector(stage['loss'],  {'moe_layers': model.moe_layers()} if stage['loss'] == 'balanced_loss' else {})
+    loss_fn = LossSelector.loss_selector(stage['loss'],  {'source': model.moe_layers, "params":stage['loss_params']} if stage['loss'] == 'balanced_loss' 
+                                         else {})
 
 
     # 3. TRAINING
     history = []
-    model.train()
     best_val_loss = float('inf')
 
     for epoch in range(train_params['epochs']):
+        # Set train mode
+        model.train()
         # Training data
         train_loss = 0
         # Iterate per batch
@@ -96,10 +98,13 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
             # Retrieve data 
             inputs = batch['input_ids'].to(device)
             targets = batch['target_ids'].to(device)
+            #print('Aspect of inputs:', inputs.shape)
+            #print('Aspect of target:', targets.shape)
             # Feed the model (B, N, V)
             logits = model(inputs)
             # Loss (B, N, V) -> (B*N, V)
-            loss = loss_fn(logits.flatten(0, 1), targets.flatten())
+            #print('Aspect of the logits:', logits.shape)
+            loss = loss_fn(logits, targets)
             # Compute loss
             optimizer.zero_grad()
             loss.backward()
@@ -120,7 +125,7 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
                 # Get output (B, N, V)
                 logits = model(inputs)
                 # Compute loss
-                val_loss += loss_fn(logits.flatten(0, 1), targets.flatten()).item()
+                val_loss += loss_fn(logits, targets).item()
 
         # Mean loss per batch
         train_loss /= len(train_loader)

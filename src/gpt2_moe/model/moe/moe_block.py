@@ -32,7 +32,8 @@ class MOE(nn.Module):
         # Forced expert index (None -> use the router)
         self.forced_expert = None
 
-        # Last routing state -> in case we use balancing loss
+        # Called once per batch: mixed loss approach
+        # Tracking experts frequency and prob
         self.last_probs = None
         self.last_selected = None
 
@@ -54,6 +55,7 @@ class MOE(nn.Module):
         # Keep routing state for the aux loss
         self.last_probs = probs
         self.last_selected = selected_experts
+
 
         # 2. Design the results tensor (B*N, D_out = D_in)
         results_tensor = torch.zeros_like(x)

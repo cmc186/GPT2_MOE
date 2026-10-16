@@ -4,6 +4,7 @@ import torch.nn as nn
 
 # Conduct relative imports
 from .balanced_loss import BalancedLoss
+from .ce_loss import CrossEntropyLossWrapper
 
 class LossSelector():
 
@@ -21,10 +22,10 @@ class LossSelector():
         match name:
 
             case 'ce':
-                return nn.CrossEntropyLoss()
+                return CrossEntropyLossWrapper(**params)
 
-            case 'own':
-                return BalancedLoss
+            case 'balanced_loss':
+                return BalancedLoss(**params)
 
 
 
