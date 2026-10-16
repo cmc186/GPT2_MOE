@@ -143,7 +143,7 @@ class Utils:
             model.trf_blocks[i].norm2.shift = Utils.assign(model.trf_blocks[i].norm2.shift, params[f"trf_blocks.{i}.norm2.shift"])
 
             # Load_mod is true when freezed FFN are required
-            if load_mod:
+            if  model.trf_blocks[i].use_moe and load_mod:
                 # FF block -> only want to load it when E2: FF always frozen
                 ff = model.trf_blocks[i].ff
                 # Load the ffn layers
