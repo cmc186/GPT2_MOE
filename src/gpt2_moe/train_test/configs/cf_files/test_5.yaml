@@ -32,9 +32,10 @@ EXPCONFIG:
   name: 'OwnFull_150_ep_alternate_moe'
   init_mode: random
   load_modality: True
+  train_experts_individually: False
   stages: 
     - name: "full"
-      groups: ["base", "ffn", "router"]
+      groups: ["base", "ffn", "router", "experts"]
       expert: null
       tasks: null
       loss: balanced_loss

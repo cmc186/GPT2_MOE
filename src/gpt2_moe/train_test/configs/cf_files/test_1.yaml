@@ -29,12 +29,13 @@ TRAIN:
 
 # Define config
 EXPCONFIG:
-  name: 'GPT_Train_FFN_freezed_100_epochs_upper_half'
+  name: 'GPT_Train_FFN_freezed_250_epochs_upper_half'
   init_mode: gpt2
   load_modality: True
+  train_experts_individually: true
   stages: 
-    - name: "full"
-      groups: ["base", "ffn", "experts", "router"]
+    - name: "joint_finetune"
+      groups: ["experts", "router"]
       expert: null
       tasks: null
       loss: balanced_loss

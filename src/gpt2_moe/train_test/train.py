@@ -44,6 +44,8 @@ configurator = ExperimentConfig(name = name)
 
 
 
+
+
 def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path:str, device:str)->None:
     """
         Function aimed to train a single stage
@@ -204,7 +206,7 @@ def run(seed:int = 42, device:str = 'cpu')->GPTMOE:
         # Define the path for the stage
         path = os.path.join(run_path, f"{stage['name']}")
         # Check existance
-        if not os.path.exists(path):
+        if not os.path.exists(path + '.pth'):
             print(f"\n(run) STAGE {stage['name']}")
             # Get DataLoaders: in case != expert then train with everything
             loaders = Utils.get_loaders(tasks = stage['tasks'] or configurator.TASKS, batch_size = hyperparams['bs'],
