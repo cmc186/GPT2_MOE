@@ -35,7 +35,7 @@ EXPCONFIG:
   train_experts_individually: true
   stages: 
     - name: "full"
-      groups: ["router"]
+      groups: ["router", "experts"]
       expert: null
       tasks: null
       loss: balanced_loss

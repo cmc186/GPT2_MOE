@@ -31,11 +31,11 @@ TRAIN:
 EXPCONFIG:
   name: 'GPT_Train_FFN_freezed_150_epochs_interleaved'
   init_mode: gpt2
-  load_modality: 
+  load_modality: True
   train_experts_individually: true
   stages: 
     - name: "full"
-      groups: ["router"]
+      groups: ["router", "experts"]
       expert: null
       tasks: null
       loss: balanced_loss
