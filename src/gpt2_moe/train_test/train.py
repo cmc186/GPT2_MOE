@@ -28,7 +28,7 @@ parser.add_argument('--seed', help = 'Select seed', default = 42)
 
 # Retrieve the arguments
 args = parser.parse_args()
-seed = args.seed
+seed = int(args.seed)
 exp = args.exp
 dev = args.dev
 name = args.name
@@ -77,13 +77,15 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
     Utils.freeze_selective(model = model, groups = stage['groups'])
     model.set_forced_expert(stage['expert'])
 
-    # 2. OPTIMIZER AND LOSS
+    # 2. OPTIMIZER, LOSS AND SCHEDULER
     # 2.1 Pass only the trainable parameters
     trainable = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable, lr = train_params['lr'])
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = train_params['epochs'])
     # 2.2 Initialize the loss
     loss_fn = LossSelector.loss_selector(stage['loss'],  {'source': model.moe_layers, "params":stage['loss_params']} if stage['loss'] == 'balanced_loss' 
                                          else {})
+    v_loss_fn = LossSelector.loss_selector('ce', {})
 
 
     # 3. TRAINING
@@ -95,6 +97,8 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
         model.train()
         # Training data
         train_loss = 0
+        clipped_batches = 0
+        epoch_grad_norm = 0
         # Iterate per batch
         for batch in train_loader:
             # Retrieve data 
@@ -110,10 +114,29 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
             # Compute loss
             optimizer.zero_grad()
             loss.backward()
+            # Gradient clipping
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                                            parameters = trainable,
+                                            max_norm  = 1.0)
+
+            #print(grad_norm if grad_norm>=1.0 else '')
+            # Register statistics
+            epoch_grad_norm += grad_norm.item()
+            clipped_batches+= grad_norm.item()>1
             # Optimizer step
             optimizer.step()
             # Update loss
             train_loss += loss.item()
+
+        # Update scheduler
+        scheduler.step()
+        current_lr = optimizer.param_groups[0]['lr']
+
+        # Register clipping statistic
+        mean_grad_norm = epoch_grad_norm/len(train_loader)
+        clip_ratio = clipped_batches/len(train_loader)
+        print(f"Average Grad Norm:{mean_grad_norm}"
+              f"Clipping ratio beyond batches:{clip_ratio}")
 
         # Validation data
         model.eval()
@@ -127,13 +150,20 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
                 # Get output (B, N, V)
                 logits = model(inputs)
                 # Compute loss
-                val_loss += loss_fn(logits, targets).item()
+                val_loss += v_loss_fn(logits, targets).item()
 
         # Mean loss per batch
         train_loss /= len(train_loader)
         val_loss /= len(val_loader)
         # Store values
-        history.append({'epoch': epoch, 'train_loss': train_loss, 'val_loss': val_loss})
+        history.append({
+            'epoch': epoch, 
+            'train_loss': train_loss, 
+            'val_loss': val_loss,
+            'lr_evo':current_lr,
+            "grad_norm":mean_grad_norm,
+            "clip_ratio":clip_ratio
+            })
         print(f" ·({stage['name']}) epoch {epoch}: train {train_loss:.4f} | val {val_loss:.4f}")
 
         # 4. STORING -> validation triggered
@@ -149,7 +179,7 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
         json.dump(history, f, indent = 2)
 
 
-def run(seed:int = 42, device:str = 'cpu')->GPTMOE:
+def run(seed:int = seed, device:str = dev)->GPTMOE:
     """
         Function aimed to run a whole experiment
 
@@ -167,7 +197,6 @@ def run(seed:int = 42, device:str = 'cpu')->GPTMOE:
 
     # Get the device
     device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
-
     # Seeding the model
     Utils.seed_setter(seed)
 
@@ -222,4 +251,4 @@ def run(seed:int = 42, device:str = 'cpu')->GPTMOE:
 
 
 if __name__=='__main__':
-    run(seed = 42, device = 'cuda')
+    run()
