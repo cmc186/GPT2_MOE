@@ -2,16 +2,16 @@
 MODEL_ATTR:
     vocab_size: 50257
     context_length: 1024
-    n_layers: 12
-    emb_dim: 768
+    n_layers: 5
+    emb_dim: 256
     dropout: 0.1
     ffn_hidden_dim: null
     moe_mask: 
-        schedule: [8,9,10,11]
+        schedule: "all"
         offset: 2
 
     attention_related:
-        num_heads: 12
+        num_heads: 4
         dropout: 0.1
         qkv_bias: True
     
@@ -23,19 +23,20 @@ MODEL_ATTR:
 
 # Define the train hyperparameter
 TRAIN:
-  epochs: 250
+  epochs: 25
   bs: 10
-  lr: 0.00003
+  lr: 0.00003 
 
 # Define config
 EXPCONFIG:
-  name: 'GPT_Train_FFN_freezed_250_epochs_upper_half'
-  init_mode: gpt2
-  load_modality: True
-  train_experts_individually: true
+  name: 'own_first_test'
+  init_mode: random
+  # Unused param but necessary
+  load_modality: False
+  train_experts_individually: False
   stages: 
-    - name: "joint_finetune"
-      groups: ["experts", "router"]
+    - name: "full_train"
+      groups: ["base", "experts", "router" ,"ffn"]
       expert: null
       tasks: null
       loss: balanced_loss
