@@ -1,47 +1,55 @@
-# Define the model attributes
-MODEL_ATTR:
+# ============================================================
+# Proposed experiments
+#   Scratch (random init):  E1 dense baseline  | E2 MoE
+#   GPT-2 (loaded weights): E3 dense fine-tune | E4 per-task experts | E5 upcycling
+#
+# Data: 6 tasks x 1000 rows (800 train per task), longest example 36 tokens
+# GPT-2 init forces: context_length 1024, emb_dim 768, num_heads 12, qkv_bias True, n_layers <= 12
+# ============================================================
+
+
+# ------------------------------------------------------------
+# E1: dense baseline from scratch (reference for E2)
+# ------------------------------------------------------------
+E1:
+  MODEL_ATTR:
     vocab_size: 50257
-    context_length: 1024
-    n_layers: 5
-    emb_dim: 256
+    context_length: 64
+    n_layers: 6
+    emb_dim: 384
     dropout: 0.1
     ffn_hidden_dim: null
-    moe_mask: 
-        schedule: "all"
-        offset: 2
+    moe_mask:
+      schedule: "none"
+      offset: 1
 
     attention_related:
-        num_heads: 4
-        dropout: 0.1
-        qkv_bias: True
-    
+      num_heads: 6
+      dropout: 0.1
+      qkv_bias: True
+
     moe_related:
-        experts: 6
-        k_routing: 2
-        hidden_dim: null
+      experts: 1
+      k_routing: 1
+      hidden_dim: null
 
+  TRAIN:
+    epochs: 100
+    bs: 32
+    lr: 0.0003
+    scorers: [token_acc]
+    final_scorers: [token_acc, exact_match]
+    max_per_task: null
 
-# Define the train hyperparameter
-TRAIN:
-  epochs: 25
-  bs: 10
-  lr: 0.00003 
-
-# Define config
-EXPCONFIG:
-  name: 'own_first_test'
-  init_mode: random
-  # Unused param but necessary
-  load_modality: False
-  train_experts_individually: False
-  stages: 
-    - name: "full_train"
-      groups: ["base", "experts", "router" ,"ffn"]
-      expert: null
-      tasks: null
-      loss: balanced_loss
-      loss_params: 
-        alpha: 0.01
-
-  
+  EXPCONFIG:
+    name: 'E1_scratch_dense'
+    init_mode: random
+    load_modality: False
+    train_experts_individually: False
+    stages:
+      - name: "full"
+        groups: ["base", "ffn"]
+        expert: null
+        tasks: null
+        loss: ce
 

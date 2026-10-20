@@ -1,0 +1,50 @@
+
+
+# ------------------------------------------------------------
+# E4: GPT-2 + MoE with one expert trained per task, then the router
+#     Base and dense FFN stay frozen. experts must be >= 6 (one per task)
+# ------------------------------------------------------------
+E4:
+  MODEL_ATTR:
+    vocab_size: 50257
+    context_length: 1024
+    n_layers: 12
+    emb_dim: 768
+    dropout: 0.1
+    ffn_hidden_dim: null
+    moe_mask:
+      schedule: "alternate"
+      offset: 2
+
+    attention_related:
+      num_heads: 12
+      dropout: 0.1
+      qkv_bias: True
+
+    moe_related:
+      experts: 6
+      k_routing: 2
+      hidden_dim: null
+
+  TRAIN:
+    epochs: 30
+    bs: 16
+    lr: 0.0001
+    scorers: [token_acc, routing_jsd]
+    final_scorers: [token_acc, exact_match, routing_jsd]
+    max_per_task: null
+
+  EXPCONFIG:
+    name: 'E4_gpt2_moe_per_task_experts'
+    init_mode: gpt2
+    load_modality: True
+    # Adds stages expert_0..expert_5 (forced expert i on task i, ce) before the ones below
+    train_experts_individually: True
+    stages:
+      - name: "router"
+        groups: ["router"]
+        expert: null
+        tasks: null
+        loss: balanced_loss
+        loss_params:
+          alpha: 0.01
