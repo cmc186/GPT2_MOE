@@ -44,9 +44,6 @@ print(f'(args) Selected yaml ({name})')
 configurator = ExperimentConfig(name = name)
 
 
-
-
-
 def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path:str, device:str)->None:
     """
         Function aimed to train a single stage
@@ -91,7 +88,7 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
 
     # 3. TRAINING
     history = []
-    best_val_loss = float('inf')
+    best_val_score = float('-inf')
 
     for epoch in range(train_params['epochs']):
         # Set train mode
@@ -136,12 +133,11 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
         # Register clipping statistic
         mean_grad_norm = epoch_grad_norm/len(train_loader)
         clip_ratio = clipped_batches/len(train_loader)
-        print(f"Average Grad Norm:{mean_grad_norm}"
-              f"Clipping ratio beyond batches:{clip_ratio}")
-
+        #print(f"Average Grad Norm:{mean_grad_norm}"f" Clipping ratio beyond batches:{clip_ratio}")
         # Validation data
         model.eval()
         val_loss = 0
+        val_score = 0
         with torch.no_grad():
             # Feed val batches to the model
             for batch in val_loader:
@@ -153,12 +149,24 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
                 # Compute loss
                 val_loss += v_loss_fn(logits, targets).item()
 
-        # Mean loss per batch
+            # Call specific metrics
+            metrics = ScorerSelector().run(
+                train_params.get('scorers', []),
+                model, 
+                val_loader,
+                device = dev
+            )
+
+
+        # Mean val, loss per batch
         train_loss /= len(train_loader)
         val_loss /= len(val_loader)
-        # Task metrcis on val 
-        metrics = ScorerSelector.run(train_params.get('scorers', []), model, val_loader, device)
-        # Store values
+
+    
+        # Get validation score: exact_match based
+        val_score = metrics["exact_match"]["mean"]
+
+        # Register values
         history.append({
             'epoch': epoch, 
             'train_loss': train_loss, 
@@ -168,13 +176,12 @@ def train_stage(model:GPTMOE, stage:dict, train_params:dict, loaders:tuple, path
             "clip_ratio":clip_ratio,
             **metrics
             })
-        means = ' | '.join(f"{k} {v['mean']:.4f}" for k, v in metrics.items() if 'mean' in v)
         
-        print(f" ·({stage['name']}) epoch {epoch}: train {train_loss:.4f} | val {val_loss:.4f}")
+        print(f" ·({stage['name']}) epoch {epoch}: train {train_loss:.4f} | val {val_loss:.4f} :{val_score:.4f}")
 
-        # 4. STORING -> validation triggered
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
+        # 4. STORING -> validation score triggered
+        if val_score > best_val_score:
+            best_val_score = val_score
             # Save the model
             torch.save(model.state_dict(), model_storing_path)
 
@@ -253,21 +260,6 @@ def run(seed:int = seed, device:str = dev)->GPTMOE:
 
         # Next stage starts from the best weights of this one
         model.load_state_dict(torch.load(path + '.pth', weights_only = True))
-
-
-    # 4. FINAL EVALUATION on the test set of every task
-        final_scorers = hyperparams.get('final_scorers', [])
-        if final_scorers:
-            print(f"\n(run) FINAL EVALUATION {final_scorers}")
-            _, _, test_loader = Utils.get_loaders(tasks = configurator.TASKS, batch_size = hyperparams['bs'],
-                                                context_length = model_params['context_length'], seed = seed)
-            test_metrics = ScorerSelector.run(final_scorers, model, test_loader, device,
-                                            max_per_task = hyperparams.get('max_per_task'))
-            print(json.dumps(test_metrics, indent = 2))
-            with open(os.path.join(run_path, 'test_metrics.json'), 'w') as f:
-                json.dump(test_metrics, f, indent = 2)
-
-
 
     return model
 

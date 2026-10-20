@@ -13,7 +13,7 @@ class ScorerSelector():
     }
 
     @staticmethod
-    def run(names:list[str], model, loader, device:str, **kwargs)->dict:
+    def run(names:list[str], model, loader, **kwargs)->dict:
         """
             Function aimed to run every requested scorer
 
@@ -24,8 +24,6 @@ class ScorerSelector():
                     The model to evaluate
                 loader(DataLoader):
                     Loader over a TaskDataset
-                device(str):
-                    cuda or cpu
                 kwargs:
                     Extra params, each scorer takes the ones it needs
 
@@ -33,10 +31,13 @@ class ScorerSelector():
                 results(dict):
                     {scorer_name: scorer_result}
         """
+        # Set model to eval in case we forgot it
         model.eval()
         results = {}
+        # Forward different scorers
         for name in names:
             if name not in ScorerSelector.SCORERS:
-                raise ValueError(f"Unknown scorer '{name}' -> {list(ScorerSelector.SCORERS)}")
-            results[name] = ScorerSelector.SCORERS[name](model, loader, device, **kwargs)
+                continue
+            # Get result
+            results[name] = ScorerSelector.SCORERS[name](model, loader, **kwargs)
         return results
