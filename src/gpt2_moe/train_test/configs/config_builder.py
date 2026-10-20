@@ -31,8 +31,8 @@ class ExperimentConfig():
         #print('Aspecto de la exp_cofig', self.exp_cofig)
 
     def get_model_params(self)->dict:
-        """ 
-            Function aimed to return model 
+        """
+            Function aimed to return model
             configuration  and init mode
 
             Returns:
@@ -40,15 +40,15 @@ class ExperimentConfig():
                     The model configuration
         """
         return self.data["MODEL_ATTR"]
-    
+
     def get_train(self)->dict:
-        """  
-            Function aimed to return train 
+        """
+            Function aimed to return train
             configuration
 
             Returns:
                 train_config(dict):
-                    Dictionary containing train 
+                    Dictionary containing train
                     configuration
         """
         return self.data["TRAIN"]
@@ -62,24 +62,24 @@ class ExperimentConfig():
             # Reboot iter idx
             self.iter_idx = 0
             raise StopIteration
-        # Return next item 
+        # Return next item
         value = self.exp_cofig['stages'][self.iter_idx]
         # Increase idx
         self.iter_idx+=1
         return value
 
     def build_stages(self)->None:
-        """  
-            Function aimed to build stages for 
+        """
+            Function aimed to build stages for
             our stages_based training
-            
+
             Remember that stages have the following
             format:
 
             STAGES:
                 name: 'E0'
                 init_mode: random
-                stages: 
+                stages:
                      - name: "test_1"
                       groups:
                      - router
@@ -88,16 +88,16 @@ class ExperimentConfig():
                       tasks: null
                       loss: ce
 
-        """ 
+        """
         # Get stages data
-        exp_cofig = self.data['EXPCONFIG']    
+        exp_cofig = self.data['EXPCONFIG']
 
          # Set the init mode and load modality
         self.name = exp_cofig["name"]
         self.init_mode = exp_cofig["init_mode"]
         self.load_modality = exp_cofig["load_modality"]
         self.upcycling = exp_cofig.get('upcycling', None)
-        experts_mode = exp_cofig["train_experts_individually"]
+        experts_mode = exp_cofig.get('train_experts_individually', False)
 
         # Add expert stages
         expert_stages = [{"name": f"expert_{i}", "groups": ["experts"], "expert": i, "tasks": [task], "loss": "ce"}
@@ -108,7 +108,7 @@ class ExperimentConfig():
         # Set values
         self.exp_cofig = exp_cofig
 
-       
+
 
     @staticmethod
     def file_checker(name:str)->str:
@@ -135,7 +135,7 @@ class ExperimentConfig():
         return  os.path.join(ExperimentConfig.BASE_DIR, 'base.yaml')
 
     def load_yaml(self, name:str)->dict:
-        """  
+        """
             Function aimed to conduct yaml file
             loading
 
@@ -147,7 +147,7 @@ class ExperimentConfig():
                 data(dict):
                     The dictionary containing retrieved params
 
-            
+
         """
 
         # Get path

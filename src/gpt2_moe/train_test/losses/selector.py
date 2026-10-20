@@ -27,6 +27,7 @@ class LossSelector():
             case 'balanced_loss':
                 return BalancedLoss(**params)
 
-
+            case _:
+                raise ValueError(f'Loss {name} is not implemented')
 
 

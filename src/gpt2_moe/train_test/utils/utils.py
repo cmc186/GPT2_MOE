@@ -60,7 +60,7 @@ class Utils:
 
         # Assign weights
         return nn.Parameter(right)
-    
+
     @staticmethod
     def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int, load_mod:bool, upcycling:bool = False)->None:
         """
@@ -158,13 +158,13 @@ class Utils:
             if model.trf_blocks[i].use_moe and upcycling:
                 for expert in ff.experts:
                     # clone -> each expert gets its own copy
-                    expert.l1.weight = Utils.assign(expert.l1.weight,  [f"trf_blocks.{i}.ff.layers.0.weight"])
-                    expert.l1.bias = Utils.assign(expert.l1.bias, params[f"trf_blocks.{i}.ff.layers.0.bias"])
-                    expert.l2.weight = Utils.assign(expert.l2.weight, params[f"trf_blocks.{i}.ff.layers.2.weight"])
-                    expert.l2.bias = Utils.assign(expert.l2.bias, params[f"trf_blocks.{i}.ff.layers.2.bias"])
+                    expert.l1.weight = Utils.assign(expert.l1.weight,  params[f"trf_blocks.{i}.ff.layers.0.weight"].clone())
+                    expert.l1.bias = Utils.assign(expert.l1.bias, params[f"trf_blocks.{i}.ff.layers.0.bias"].clone())
+                    expert.l2.weight = Utils.assign(expert.l2.weight, params[f"trf_blocks.{i}.ff.layers.2.weight"].clone())
+                    expert.l2.bias = Utils.assign(expert.l2.bias, params[f"trf_blocks.{i}.ff.layers.2.bias"].clone())
 
-            
-           
+
+
     '''
     @staticmethod
     def load_block(model:GPTMOE, base_path:str, block_idx:int, version:str)->None:
@@ -472,7 +472,7 @@ class Utils:
         # Build the tokenizer and the CSV paths
         tokenizer = Tokenizer(embedding_dim = 768, max_seq_len = context_length)
         datasets = [os.path.join(DATA_DIR, f'{task}.csv') for task in tasks]
-        
+
 
         # Same split and padding logic as data/
         data = DataLoader(tokenizer, context_lenght = context_length, batch_size = batch_size,
@@ -481,8 +481,8 @@ class Utils:
 
     @staticmethod
     def seed_setter(seed:int)->None:
-        """ 
-            Function aimed to ensure experiment's 
+        """
+            Function aimed to ensure experiment's
             reproducibility
 
             Params:
