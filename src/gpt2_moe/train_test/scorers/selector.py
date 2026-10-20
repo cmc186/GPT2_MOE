@@ -5,7 +5,7 @@ import torch.nn as nn
 # Conduct relative imports 
 from .jenser_divergence import JensenDivergence
 
-class LossSelector():
+class ScorerSelector():
 
     def __init__(self):
         pass

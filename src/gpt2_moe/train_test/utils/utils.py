@@ -62,7 +62,7 @@ class Utils:
         return nn.Parameter(right)
     
     @staticmethod
-    def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int, load_mod:bool)->None:
+    def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int, load_mod:bool, upcycling:bool = False)->None:
         """
             Function aimed to load weights into a given
             model. GPT skeleton architecture is expected
@@ -82,6 +82,9 @@ class Utils:
 
                 load_mod (bool):
                     Decided whether FFN are loaded or not
+
+                upcycling(bool):
+                    Parameter defining expert loading
 
             Returns:
                 None:
@@ -152,16 +155,15 @@ class Utils:
                 ff.ffn[2].weight = Utils.assign(ff.ffn[2].weight, params[f"trf_blocks.{i}.ff.layers.2.weight"])
                 ff.ffn[2].bias = Utils.assign(ff.ffn[2].bias, params[f"trf_blocks.{i}.ff.layers.2.bias"])
 
-            '''
-                We do not want experts Fine Tuning
-                if model.moe_mask[i]:
-                    for expert in ff.experts:
-                        # clone -> each expert gets its own copy
-                        expert.l1.weight = Utils.assign(expert.l1.weight, w1.clone())
-                        expert.l1.bias = Utils.assign(expert.l1.bias, b1.clone())
-                        expert.l2.weight = Utils.assign(expert.l2.weight, w2.clone())
-                        expert.l2.bias = Utils.assign(expert.l2.bias, b2.clone())
-            '''
+            if model.trf_blocks[i].use_moe and upcycling:
+                for expert in ff.experts:
+                    # clone -> each expert gets its own copy
+                    expert.l1.weight = Utils.assign(expert.l1.weight,  [f"trf_blocks.{i}.ff.layers.0.weight"])
+                    expert.l1.bias = Utils.assign(expert.l1.bias, params[f"trf_blocks.{i}.ff.layers.0.bias"])
+                    expert.l2.weight = Utils.assign(expert.l2.weight, params[f"trf_blocks.{i}.ff.layers.2.weight"])
+                    expert.l2.bias = Utils.assign(expert.l2.bias, params[f"trf_blocks.{i}.ff.layers.2.bias"])
+
+            
            
     '''
     @staticmethod

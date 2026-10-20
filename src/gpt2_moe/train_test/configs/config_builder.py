@@ -9,9 +9,9 @@ class ExperimentConfig():
 
     # Define constant values
     TASKS = ["add_sub", "mul_div", "alphabetic", "spell", "parity", "first_last"]
-    BASE_DIR = os.path.join(Path.cwd(), 'configs/cf_files')
+    BASE_DIR = os.path.join(Path(__file__).parents[1], 'configs/cf_files')
 
-    print(BASE_DIR)
+    print('CONFIG BASE DIR:', BASE_DIR)
 
     def __init__(self, name:str):
 
@@ -96,6 +96,7 @@ class ExperimentConfig():
         self.name = exp_cofig["name"]
         self.init_mode = exp_cofig["init_mode"]
         self.load_modality = exp_cofig["load_modality"]
+        self.upcycling = exp_cofig.get('upcycling', None)
         experts_mode = exp_cofig["train_experts_individually"]
 
         # Add expert stages

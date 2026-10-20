@@ -221,7 +221,8 @@ def run(seed:int = seed, device:str = dev)->GPTMOE:
     # Load weights if required 
     if configurator.init_mode == 'gpt2':
         # Switch loading mode 
-        Utils.load_weights(model = model, name = GPT2_NAME, base_path = BASE_PATH, blocks = model_params['n_layers'], load_mod = configurator.load_modality)
+        Utils.load_weights(model = model, name = GPT2_NAME, base_path = BASE_PATH, blocks = model_params['n_layers'],
+                            load_mod = configurator.load_modality, upcycling = configurator.upcycling)
     # Move model to the selected device
     model.to(device)
 
