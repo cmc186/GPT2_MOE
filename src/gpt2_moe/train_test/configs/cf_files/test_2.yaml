@@ -36,7 +36,7 @@
     name: 'E2_scratch_moe_alternate'
     init_mode: random
     load_modality: False
-    train_experts_individually: False
+    train_experts_individually: True
     stages:
       - name: "full"
         groups: ["base", "ffn", "router", "experts"]

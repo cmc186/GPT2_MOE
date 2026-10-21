@@ -36,7 +36,7 @@ E2:
     name: 'E3_scratch_moe_full'
     init_mode: random
     load_modality: False
-    train_experts_individually: False
+    train_experts_individually: True
     stages:
       - name: "full"
         groups: ["base", "ffn", "router", "experts"]
