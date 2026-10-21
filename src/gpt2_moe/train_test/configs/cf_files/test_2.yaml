@@ -3,7 +3,7 @@
 # E2: MoE from scratch, same size and active params as E1
 #     (hidden_dim auto = 4*emb_dim/k -> same FLOPs per token)
 # ------------------------------------------------------------
-E2:
+
   MODEL_ATTR:
     vocab_size: 50257
     context_length: 64

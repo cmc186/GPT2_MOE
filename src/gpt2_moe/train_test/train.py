@@ -256,7 +256,12 @@ def run(seed:int = seed, device:str = dev)->GPTMOE:
                                         context_length = model_params['context_length'], seed = seed
                                     )
             # Call training
-            train_stage(model = model, stage = stage, train_params = hyperparams, loaders = loaders, path = path, device = device)
+            stage_params = hyperparams.copy()
+
+            # Set epochs for final phase
+            if stage['name'] == 'full':
+                stage_params['epochs'] = 15
+            train_stage(model = model, stage = stage, train_params = stage_params, loaders = loaders, path = path, device = device)
 
         # Next stage starts from the best weights of this one
         model.load_state_dict(torch.load(path + '.pth', weights_only = True))

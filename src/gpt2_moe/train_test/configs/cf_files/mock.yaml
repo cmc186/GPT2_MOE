@@ -1,0 +1,47 @@
+
+# ------------------------------------------------------------
+# E2: MoE from scratch, same size and active params as E1
+#     (hidden_dim auto = 4*emb_dim/k -> same FLOPs per token)
+# ------------------------------------------------------------
+
+  MODEL_ATTR:
+    vocab_size: 50257
+    context_length: 64
+    n_layers: 6
+    emb_dim: 512
+    dropout: 0.1
+    ffn_hidden_dim: null
+    moe_mask:
+      schedule: "all"
+      offset: 2
+
+    attention_related:
+      num_heads: 8
+      dropout: 0.1
+      qkv_bias: True
+
+    moe_related:
+      experts: 6
+      k_routing: 1
+      hidden_dim: null
+
+  TRAIN:
+    epochs: 5
+    bs: 32
+    lr: 0.0003
+    scorers: [exact_match]
+    max_per_task: null
+
+  EXPCONFIG:
+    name: 'mock'
+    init_mode: random
+    load_modality: False
+    train_experts_individually: True
+    stages:
+      - name: "full"
+        groups: ["base", "ffn", "router", "experts"]
+        expert: null
+        tasks: null
+        loss: balanced_loss
+        loss_params:
+          alpha: 0.01
