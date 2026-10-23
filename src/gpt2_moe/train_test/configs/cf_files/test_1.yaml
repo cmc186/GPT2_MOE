@@ -34,7 +34,7 @@ MODEL_ATTR:
     hidden_dim: null
 
 TRAIN:
-  epochs: 100
+  epochs: 50
   bs: 32
   lr: 0.0003
   scorers: [exact_match]
