@@ -260,7 +260,8 @@ def run(seed:int = seed, device:str = dev)->GPTMOE:
 
             # Set epochs for final phase
             if stage['name'] == 'full':
-                stage_params['epochs'] = 15
+                if configurator.experts_mode:
+                    stage_params['epochs'] = 15
             train_stage(model = model, stage = stage, train_params = stage_params, loaders = loaders, path = path, device = device)
 
         # Next stage starts from the best weights of this one

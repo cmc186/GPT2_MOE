@@ -7,7 +7,7 @@
   MODEL_ATTR:
     vocab_size: 50257
     context_length: 64
-    n_layers: 6
+    n_layers: 10
     emb_dim: 512
     dropout: 0.1
     ffn_hidden_dim: null
@@ -33,7 +33,7 @@
     max_per_task: null
 
   EXPCONFIG:
-    name: 'E2_scratch_moe_alternate'
+    name: 'E2_scratch_moe_alternate_local'
     init_mode: random
     load_modality: False
     train_experts_individually: True

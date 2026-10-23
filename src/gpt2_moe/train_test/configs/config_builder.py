@@ -97,13 +97,13 @@ class ExperimentConfig():
         self.init_mode = exp_cofig["init_mode"]
         self.load_modality = exp_cofig["load_modality"]
         self.upcycling = exp_cofig.get('upcycling', None)
-        experts_mode = exp_cofig.get('train_experts_individually', False)
+        self.experts_mode = exp_cofig.get('train_experts_individually', False)
 
         # Add expert stages
         expert_stages = [{"name": f"expert_{i}", "groups": ["experts"], "expert": i, "tasks": [task], "loss": "ce"}
                     for i, task in enumerate(self.TASKS)]
         # Modify base stages
-        exp_cofig["stages"] = (expert_stages  if experts_mode else [])  + exp_cofig["stages"]
+        exp_cofig["stages"] = (expert_stages  if self.experts_mode else [])  + exp_cofig["stages"]
 
         # Set values
         self.exp_cofig = exp_cofig

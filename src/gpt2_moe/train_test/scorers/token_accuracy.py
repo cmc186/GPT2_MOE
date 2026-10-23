@@ -5,7 +5,6 @@ import torch
 from .common import IGNORE_INDEX, per_task
 
 
-@torch.no_grad()
 def token_accuracy(model, loader, device:str, **kwargs)->dict:
     """
         Function aimed to compute the accuracy over the
