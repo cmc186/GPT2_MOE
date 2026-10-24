@@ -1,0 +1,46 @@
+# Define the model attributes
+MODEL_ATTR:
+    vocab_size: 50257
+    context_length: 1024
+    n_layers: 10
+    emb_dim: 768
+    dropout: 0.1
+    ffn_hidden_dim: null
+    moe_mask: 
+        schedule: "alternate"
+        offset: 2
+
+    attention_related:
+        num_heads: 12
+        dropout: 0.1
+        qkv_bias: True
+    
+    moe_related:
+        experts: 6
+        k_routing: 2
+        hidden_dim: null
+
+
+# Define the train hyperparameter
+TRAIN:
+  epochs: 150
+  bs: 10
+  lr: 0.00003
+
+# Define config
+EXPCONFIG:
+  name: 'OwnFull_150_ep_alternate_moe'
+  init_mode: random
+  load_modality: True
+  train_experts_individually: False
+  stages: 
+    - name: "full"
+      groups: ["base", "ffn", "router", "experts"]
+      expert: null
+      tasks: null
+      loss: balanced_loss
+      loss_params: 
+        alpha: 0.01
+
+  
+

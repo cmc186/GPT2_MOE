@@ -1,14 +1,15 @@
 # Import modules
-from torch.utils.data import Dataset
+import os
 import torch
 import pandas as pd
-import os
+from torch.utils.data import Dataset
+from pathlib import Path
 
 from gpt2_moe.data.tokenizer import Tokenizer
 
 
 # Define dir for data
-DATA_DIR = "data" 
+DATA_DIR = os.path.join(Path(__file__).parents[3].resolve(), 'data')
 
 
 

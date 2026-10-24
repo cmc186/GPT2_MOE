@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class JensenDivergence():    
+class JensenDivergence():
 
     @staticmethod
     def kl_divergence(p:torch.Tensor, q:torch.Tensor, eps:float = 1e-12)->torch.Tensor:
@@ -15,39 +15,27 @@ class JensenDivergence():
                     The predicted distribution
 
                 q (torch.Tensor):
-                    The target distribution 
+                    The target distribution
 
                 eps (float):
-                    Avoid ln(0) 
+                    Avoid ln(0)
 
             Returns:
                 kl (p|q) (torch.Tensor):
                     The output tensor
         """
-
-        # We state two probability distributions (P and Q)
-        # P: the empiric distribution (N,|V|)
-        print(f'    (kl) Aspect of the empiric distribution:{p.shape}')
-
-        # Q: the ground truth distribution: peaked in 1 token (N,|V|)
-        print(f'    (kl) Aspect of the gt distribution:{q.shape}')
-
         # Clamp the log  values -> avoid zeroes in log -> avoid modifiying original dist
-        eps = 1e-12
         log_p = torch.log(torch.clamp(input = p, min = eps))
         log_q = torch.log(torch.clamp(input = q, min = eps))
 
-        # Compute the KL
-        # Expected shape (B, N) -> zero safety was previously ensured
-        kl = (p*(log_p - log_q)).sum(-1)
-        print(f'    (kl) Aspect of the KL distribution:{kl.shape}')
-        return  kl
+        # Compute the KL over the last dim
+        return (p*(log_p - log_q)).sum(-1)
 
     @staticmethod
     def __call__(p:torch.Tensor, q:torch.Tensor)->torch.Tensor:
         """
             Function aimed to compute the Jensen
-            Divergence. The formula applied is the 
+            Divergence. The formula applied is the
             following:
 
             JSD(P||Q) = 0.5*D(P||M) + 0.5*D(Q||M)
@@ -59,25 +47,17 @@ class JensenDivergence():
                     The predicted distribution
                 q(torch.Tensor):
                     The ground truth distribution
-            
+
             Returns:
-                jsd (float):
-                    Value for the JSD
+                jsd (torch.Tensor):
+                    Value for the JSD (last dim reduced)
         """
-        # Get the mixture distribution M (B, N, |V|)
+        # Get the mixture distribution M
         M = 0.5*(p + q)
-        print(f'(jsd) Aspect of the half distribution:', M.shape)
 
-        # KL(P||M) -->(B, N, 1)
-        print(f'(jsd) GETTING KL(P||M)')
+        # KL(P||M) and KL(Q||M)
         kl_p = JensenDivergence.kl_divergence(p = p, q = M)
-
-        # KL(Q||M) --> (B, N, 1)
-        print(f'(jsd) GETTING KL(Q||M)')
         kl_q = JensenDivergence.kl_divergence(p = q, q = M)
 
-
-        # Get the final value  --> (B, N, 1)  
-        jsd = 0.5*kl_p + 0.5*kl_q
-        print(f'(jsd) Aspect of the jensen divergence:', jsd.shape)
-        return jsd
+        # Get the final value
+        return 0.5*kl_p + 0.5*kl_q

@@ -1,0 +1,54 @@
+# Basic Imports
+import torch
+
+# Relative imports
+from .common import per_task, split_example, greedy_answer
+
+
+def exact_match(model, loader, device:str, max_per_task:int = None, **kwargs)->dict[str:float]:
+    """
+        Function aimed to compute the exact match of the
+        generated answer per task
+
+        Params:
+            model(GPTMOE):
+                The model to evaluate
+            loader(DataLoader):
+                Loader over a TaskDataset
+            device (str):
+                The selected device
+            max_per_task(int):
+                Max examples evaluated per task.
+                Default value is None -> all
+
+        Returns:
+            results(dict):
+                A dict composed by task:score items
+    """
+    # Get the dataset
+    ds = loader.dataset
+    # Get the task names
+    names = ds.task_names
+    # Define scoring trackers
+    correct = torch.zeros(len(names))
+    total = torch.zeros(len(names))
+
+    # Iterate over batches
+    for batch in loader:
+        # Iterate within batches
+        for input, target, task in zip(batch['input_ids'], batch['target_ids'], batch['task'].tolist()):
+            # Define per task token eval thresh
+            if max_per_task is not None and total[task] >= max_per_task:
+                continue
+            # Retrieve the  clean prompt and the answer
+            prompt, answer = split_example(input, target)
+            # Generate and decode with greedy method
+            prediction = greedy_answer(model, prompt.to(device), ds.eos_id, max_new = len(answer) + 5)
+            # Compare decoded strings without spaces -> exact matching
+            matching = ds.tokenizer.decode(prediction).strip() == ds.tokenizer.decode(answer.tolist()).strip()
+            # Register per class counter
+            correct[task] += int(matching)
+            # Increase task counter for later aggregated metrics
+            total[task] += 1
+
+    return per_task(correct, total, names)

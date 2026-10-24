@@ -60,9 +60,9 @@ class Utils:
 
         # Assign weights
         return nn.Parameter(right)
-    
+
     @staticmethod
-    def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int, load_mod:bool)->None:
+    def load_weights(model:GPTMOE, name:str, base_path:str, blocks:int, load_mod:bool, upcycling:bool = False)->None:
         """
             Function aimed to load weights into a given
             model. GPT skeleton architecture is expected
@@ -82,6 +82,9 @@ class Utils:
 
                 load_mod (bool):
                     Decided whether FFN are loaded or not
+
+                upcycling(bool):
+                    Parameter defining expert loading
 
             Returns:
                 None:
@@ -143,7 +146,7 @@ class Utils:
             model.trf_blocks[i].norm2.shift = Utils.assign(model.trf_blocks[i].norm2.shift, params[f"trf_blocks.{i}.norm2.shift"])
 
             # Load_mod is true when freezed FFN are required
-            if load_mod:
+            if  not(model.trf_blocks[i].use_moe) and load_mod:
                 # FF block -> only want to load it when E2: FF always frozen
                 ff = model.trf_blocks[i].ff
                 # Load the ffn layers
@@ -152,17 +155,16 @@ class Utils:
                 ff.ffn[2].weight = Utils.assign(ff.ffn[2].weight, params[f"trf_blocks.{i}.ff.layers.2.weight"])
                 ff.ffn[2].bias = Utils.assign(ff.ffn[2].bias, params[f"trf_blocks.{i}.ff.layers.2.bias"])
 
-            '''
-                We do not want experts Fine Tuning
-                if model.moe_mask[i]:
-                    for expert in ff.experts:
-                        # clone -> each expert gets its own copy
-                        expert.l1.weight = Utils.assign(expert.l1.weight, w1.clone())
-                        expert.l1.bias = Utils.assign(expert.l1.bias, b1.clone())
-                        expert.l2.weight = Utils.assign(expert.l2.weight, w2.clone())
-                        expert.l2.bias = Utils.assign(expert.l2.bias, b2.clone())
-            '''
-           
+            if model.trf_blocks[i].use_moe and upcycling:
+                for expert in ff.experts:
+                    # clone -> each expert gets its own copy
+                    expert.l1.weight = Utils.assign(expert.l1.weight,  params[f"trf_blocks.{i}.ff.layers.0.weight"].clone())
+                    expert.l1.bias = Utils.assign(expert.l1.bias, params[f"trf_blocks.{i}.ff.layers.0.bias"].clone())
+                    expert.l2.weight = Utils.assign(expert.l2.weight, params[f"trf_blocks.{i}.ff.layers.2.weight"].clone())
+                    expert.l2.bias = Utils.assign(expert.l2.bias, params[f"trf_blocks.{i}.ff.layers.2.bias"].clone())
+
+
+
     '''
     @staticmethod
     def load_block(model:GPTMOE, base_path:str, block_idx:int, version:str)->None:
@@ -471,6 +473,7 @@ class Utils:
         tokenizer = Tokenizer(embedding_dim = 768, max_seq_len = context_length)
         datasets = [os.path.join(DATA_DIR, f'{task}.csv') for task in tasks]
 
+
         # Same split and padding logic as data/
         data = DataLoader(tokenizer, context_lenght = context_length, batch_size = batch_size,
                           seed = seed, datasets = datasets)
@@ -478,8 +481,8 @@ class Utils:
 
     @staticmethod
     def seed_setter(seed:int)->None:
-        """ 
-            Function aimed to ensure experiment's 
+        """
+            Function aimed to ensure experiment's
             reproducibility
 
             Params:
@@ -493,4 +496,3 @@ class Utils:
 
         # Set the seed
         torch.manual_seed(seed)
-

@@ -1,0 +1,54 @@
+# ============================================================
+# Proposed experiments
+#   Scratch (random init):  E1 dense baseline  | E2 MoE
+#   GPT-2 (loaded weights): E3 dense fine-tune | E4 per-task experts | E5 upcycling
+#
+# Data: 6 tasks x 1000 rows (800 train per task), longest example 36 tokens
+# GPT-2 init forces: context_length 1024, emb_dim 768, num_heads 12, qkv_bias True, n_layers <= 12
+# ============================================================
+
+
+# ------------------------------------------------------------
+# E1: dense baseline from scratch (reference for E2)
+# ------------------------------------------------------------
+
+MODEL_ATTR:
+  vocab_size: 50257
+  context_length: 64
+  n_layers: 10
+  emb_dim: 512
+  dropout: 0.1
+  ffn_hidden_dim: null
+  moe_mask:
+    schedule: "none"
+    offset: 1
+
+  attention_related:
+    num_heads: 8
+    dropout: 0.1
+    qkv_bias: True
+
+  moe_related:
+    experts: 1
+    k_routing: 1
+    hidden_dim: null
+
+TRAIN:
+  epochs: 50
+  bs: 32
+  lr: 0.0003
+  scorers: [exact_match]
+  max_per_task: null
+
+EXPCONFIG:
+  name: 'E1_scratch_dense'
+  init_mode: random
+  load_modality: False
+  train_experts_individually: False
+  stages:
+    - name: "full"
+      groups: ["base", "ffn"]
+      expert: null
+      tasks: null
+      loss: ce
+
