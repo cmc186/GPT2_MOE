@@ -132,7 +132,7 @@ class ExperimentConfig():
             return mock_path
 
         print(f'The seeked file ({name}) does not exist')
-        return  os.path.join(ExperimentConfig.BASE_DIR, 'base.yaml')
+        return  os.path.join(ExperimentConfig.BASE_DIR, 'test_1.yaml')
 
     def load_yaml(self, name:str)->dict:
         """
