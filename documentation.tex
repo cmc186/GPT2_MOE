@@ -1,0 +1,217 @@
+% ============================================================
+% Memoria del proyecto GPT2_MOE
+% Formato: artículo científico a doble columna (estilo AAAI),
+% 4 páginas de contenido + referencias
+% ============================================================
+\documentclass[10pt,twocolumn,a4paper]{article}
+
+% ---------- Idioma y codificación ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-nodecimaldot,es-noshorthands]{babel}
+
+% ---------- Tipografía y página ----------
+\usepackage{mathptmx}                 % Times (texto y matemáticas)
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\usepackage{microtype}
+\usepackage[a4paper,textwidth=7in,textheight=9.6in,top=0.75in,columnsep=0.33in,hcentering]{geometry}
+\setlength{\parindent}{10pt}
+\frenchspacing
+
+% ---------- Secciones (estilo AAAI) ----------
+\usepackage{titlesec}
+\titleformat{\section}{\centering\normalfont\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\paragraph}[runin]{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{2ex plus .5ex minus .2ex}{1ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{1.6ex plus .5ex minus .2ex}{0.8ex plus .2ex}
+\titlespacing*{\paragraph}{0pt}{1ex plus .3ex minus .2ex}{0.8em}
+
+% ---------- Matemáticas, tablas y figuras ----------
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[font=small,labelfont=bf,labelsep=colon]{caption}
+
+% ---------- Referencias y enlaces (autor-año, como AAAI) ----------
+\usepackage[authoryear,round]{natbib}
+\setcitestyle{aysep={}}
+\usepackage[hidelinks,hyperfootnotes=false]{hyperref}
+\usepackage[spanish,noabbrev]{cleveref}
+
+% ============================================================
+% DATOS DEL DOCUMENTO
+% ============================================================
+\newcommand{\papertitle}{TÍTULO DEL TRABAJO}
+\newcommand{\paperdate}{25/10/2026}
+
+\pagestyle{plain}
+
+% ============================================================
+\begin{document}
+
+\twocolumn[{%
+  \centering
+  {\fontsize{14.4}{17}\selectfont\bfseries \papertitle\par}
+  \vspace{1.2em}
+  {\fontsize{11}{13}\selectfont\bfseries
+    Carlos Molera Canals, Pablo García Beltrá, Linxi Jiang, Manuel García Romo\par}
+  \vspace{0.4em}
+  {\normalsize Universidad de Alicante\par}
+  \vspace{2em}
+}]
+
+% Nota al pie de la primera columna (como el copyright de AAAI)
+{\renewcommand{\thefootnote}{}\footnotetext{\raggedright\footnotesize Memoria del proyecto
+GPT-2 MoE. Universidad de Alicante, \paperdate.}}
+
+% ------------------------------------------------------------
+% RESUMEN
+% ------------------------------------------------------------
+\begin{center}
+  \bfseries Resumen
+\end{center}
+\vspace{-0.6em}
+{\small\leftskip=0.25in\rightskip=0.25in\noindent
+
+\par}
+
+% ------------------------------------------------------------
+\section{Introducción}
+\label{sec:intro}
+
+\paragraph{Trabajo relacionado}
+
+\paragraph{Contribuciones}
+
+% ------------------------------------------------------------
+\section{Tareas y datos}
+\label{sec:data}
+
+Para estudiar si los expertos se especializan es necesario un conjunto de
+tareas claramente diferenciadas y con una única respuesta correcta. Por ello construimos un dataset sintético con nuestro generador que incluye las seis tareas. Cada tarea se genera de forma
+independiente con una semilla fija (42), por lo que el conjunto es
+reproducible, y se guarda en un CSV con dos columnas, entrada
+(\texttt{prompt}) y la respuesta esperada (\texttt{y}).
+
+Cada ejemplo se convierte en la secuencia
+\begin{center}
+  \small\texttt{tarea: prompt = y}
+\end{center}
+de modo que el nombre de la tarea queda explícito al inicio del contexto (opcional). La
+secuencia se tokeniza con el tokenizador BPE de GPT-2. La pérdida solo se calcula sobre los tokens
+de la respuesta y el de fin de secuencia, el \emph{prompt} se enmascara. Se
+descartan los ejemplos duplicados y los que superan la longitud de contexto
+(64 tokens), y las secuencias se rellenan por la derecha hasta la longitud
+del ejemplo más largo de entrenamiento. Cada tarea se divide por separado en
+entrenamiento, validación y test (80/10/10) con la misma semilla, de modo que
+ninguna fila se comparte entre particiones y todas las tareas mantienen la
+misma proporción en cada una. Cada fase de entrenamiento utiliza 100\,000
+ejemplos.
+
+Las seis tareas cubren capacidades distintas: suma y producto, transformación de toda la secuencia de entrada,
+acceso a posiciones concretas y clasificación binaria. Además, difieren en la
+longitud de la respuesta, desde un único token en la paridad hasta más de
+veinte en la ordenación o el deletreo, y en el vocabulario, que usan tanto dígitos como letras y símbolos. Esta heterogeneidad es la condición para que
+tenga sentido specializar expertos, si todas las tareas exigieran el mismo
+tipo de cómputo, no habría nada que repartir entre ellos. Cada una tiene una única respuesta correcta, lo que permite evaluar con
+\emph{exact match} sin ambigüedad.
+
+\paragraph{Tareas}
+\begin{itemize}[leftmargin=*,nosep]
+  \item \textbf{Suma y resta} (\texttt{add\_sub}): dos enteros
+    $a, b \in [1, 10^4]$ unidos por $+$ o $-$ (la respuesta puede ser negativa).
+  \item \textbf{Multiplicación y división} (\texttt{mul\_div}): producto de
+    dos enteros en $[1, 10^4]$ o división exacta.
+  \item \textbf{Ordenación alfabética} (\texttt{alphabetic}): de 3 a 25
+    letras mayúsculas y minúsculas separadas por espacios, que deben
+    devolverse ordenadas sin distinguir mayúsculas.
+  \item \textbf{Deletreo} (\texttt{spell}): una cadena de 3 a 25 caracteres
+    (letras, dígitos y signos de puntuación) que debe reescribirse carácter a
+    carácter, separada por espacios.
+  \item \textbf{Paridad} (\texttt{parity}): un entero en $[0, 10^4]$; la
+    respuesta es 0 si es par y 1 si es impar.
+  \item \textbf{Primero y último} (\texttt{first\_last}): una cadena de 3 a
+    25 letras; la respuesta es la concatenación de su primer y su último
+    carácter.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Arquitectura}
+\label{sec:arch}
+
+\subsection{Modelo base}
+\label{sec:base}
+
+\subsection{Capa MoE}
+\label{sec:moe}
+
+\subsection{Pérdida de balanceo de carga}
+\label{sec:loss}
+
+% ------------------------------------------------------------
+\section{Experimentos}
+\label{sec:experiments}
+
+\subsection{E1: modelo denso}
+\label{sec:e1}
+
+\subsection{E2: MoE con expertos preentrenados por tarea}
+\label{sec:e2}
+
+\subsection{E3: MoE con entrenamiento conjunto}
+\label{sec:e3}
+
+% ------------------------------------------------------------
+\section{Resultados}
+\label{sec:results}
+
+% ------------------------------------------------------------
+\section{Discusión}
+\label{sec:discussion}
+
+% ------------------------------------------------------------
+\section{Conclusiones}
+\label{sec:conclusions}
+
+% ============================================================
+% REFERENCIAS (citar con \citep{clave} o \citet{clave})
+% Formato: \bibitem[Apellido et~al.(Año)]{clave}
+% ============================================================
+% Las referencias empiezan siempre en la página 5 (4 de contenido)
+\clearpage
+\makeatletter
+\@whilenum\value{page}<5\do{\null\clearpage}
+\makeatother
+\renewcommand{\refname}{Referencias}
+\renewcommand{\bibfont}{\small}
+\setlength{\bibsep}{3pt plus 1pt}
+\begin{thebibliography}{99}
+
+\bibitem[Fedus, Zoph y Shazeer(2022)]{fedus2022switch}
+Fedus, W.; Zoph, B.; y Shazeer, N. 2022.
+\newblock Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity.
+\newblock \emph{Journal of Machine Learning Research}, 23(120): 1--39.
+
+\bibitem[Jiang et~al.(2024)]{jiang2024mixtral}
+Jiang, A.~Q.; Sablayrolles, A.; Roux, A.; Mensch, A.; Savary, B.; et~al. 2024.
+\newblock Mixtral of Experts.
+\newblock \emph{arXiv preprint arXiv:2401.04088}.
+
+\bibitem[Komatsuzaki et~al.(2023)]{komatsuzaki2023upcycling}
+Komatsuzaki, A.; Puigcerver, J.; Lee-Thorp, J.; Riquelme, C.; Mustafa, B.; Ainslie, J.; Tay, Y.; Dehghani, M.; y Houlsby, N. 2023.
+\newblock Sparse Upcycling: Training Mixture-of-Experts from Dense Checkpoints.
+\newblock En \emph{International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Shazeer et~al.(2017)]{shazeer2017moe}
+Shazeer, N.; Mirhoseini, A.; Maziarz, K.; Davis, A.; Le, Q.; Hinton, G.; y Dean, J. 2017.
+\newblock Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer.
+\newblock En \emph{International Conference on Learning Representations (ICLR)}.
+
+\end{thebibliography}
+
+\end{document}

@@ -25,7 +25,21 @@ wandb/
 *.pt
 *.pth
 *.ckpt
+*.zip
+/weights
 src/gpt2_moe/checkpoints/
+
+# LaTeX: salida de compilación de la memoria (VS Code / latexmk)
+/build/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+/documentation.pdf
 
 # VS Code: compartir solo la configuración común
 .vscode/*
