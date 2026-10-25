@@ -1,7 +1,6 @@
 # Conduct relative imports
 from .token_accuracy import token_accuracy
 from .exact_match import exact_match
-from .routing_divergence import routing_divergence
 
 class ScorerSelector():
 
@@ -9,7 +8,6 @@ class ScorerSelector():
     SCORERS = {
         'token_acc': token_accuracy,
         'exact_match': exact_match,
-        'routing_jsd': routing_divergence,
     }
 
     @staticmethod
