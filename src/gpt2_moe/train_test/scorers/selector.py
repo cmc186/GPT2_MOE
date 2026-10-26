@@ -2,6 +2,7 @@
 from .exact_match import exact_match
 from .token_level_ce import token_level_ce
 from .token_accuracy import token_accuracy
+from .routing import routing_jsd
 
 class ScorerSelector():
 
@@ -9,7 +10,8 @@ class ScorerSelector():
     SCORERS = {
         'token_acc': token_accuracy,
         'exact_match': exact_match,
-        "token_ce": token_level_ce
+        "token_ce": token_level_ce,
+        "routing_jsd": routing_jsd
     }
 
     @staticmethod
