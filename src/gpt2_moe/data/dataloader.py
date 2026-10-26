@@ -11,16 +11,22 @@ DATA_DIR = "data"
 class DataLoader:
     def __init__(self, tokenizer: Tokenizer, context_lenght: int, batch_size: int, seed: int = 42, fractions: tuple = (0.8, 0.1, 0.1), datasets: list = [], max_lenght: int | None = None):
         '''
-        Build the train, val and test dataloaders with every example padded to the same length
-        Parameters:
-        -----------
-            tokenizer (Tokenizer): Tokenizer used to encode the examples
-            context_lenght (int): Max length the model accepts
-            batch_size (int): Examples per batch
-            seed (int): Seed for the split and the shuffle
-            fractions (tuple): Fractions for train, val and test
-            datasets (list): CSV paths. Empty -> every CSV inside data/
-            max_lenght (int | None): Padded length. None -> longest example of the training set
+            Build the train, val and test dataloaders with every example padded to the same length
+            Params:
+                tokenizer (Tokenizer): 
+                    Tokenizer used to encode the examples
+                context_lenght (int): 
+                    Max length the model accepts
+                batch_size (int): 
+                    Examples per batch
+                seed (int): 
+                    Seed for the split and the shuffle
+                fractions (tuple): 
+                    Fractions for train, val and test
+                datasets (list): 
+                    CSV paths. Empty -> every CSV inside data/
+                max_lenght (int | None): 
+                    Padded length. None -> longest example of the training set
         '''
         self.tokenizer = tokenizer
         self.context_lenght = context_lenght
@@ -59,19 +65,19 @@ class DataLoader:
     @staticmethod
     def _longest(ds: TaskDataset) -> int:
         '''
-        Length of the longest example in a dataset
-        Parameters:
-        -----------
-            ds (TaskDataset): The dataset to measure
-        Returns:
-        --------
-            int: Number of tokens of its longest input_ids
+            Length of the longest example in a dataset
+            Params:
+                ds (TaskDataset): 
+                    The dataset to measure
+            Returns:
+                int: 
+                    Number of tokens of its longest input_ids
         '''
         return max(len(input_ids) for input_ids, _, _ in ds.examples)
 
     def _check_lengths(self) -> None:
         '''
-        Make sure max_lenght fits in the model and every example fits in max_lenght
+            Make sure max_lenght fits in the model and every example fits in max_lenght
         '''
         if self.max_lenght > self.context_lenght:
             raise ValueError(f"max_lenght={self.max_lenght} is bigger than context_lenght={self.context_lenght}")
@@ -83,10 +89,10 @@ class DataLoader:
 
     def _pad(self, ds: TaskDataset) -> None:
         '''
-        Pad on the right every example of a dataset up to max_lenght
-        Parameters:
-        -----------
-            ds (TaskDataset): The dataset to pad 
+            Pad on the right every example of a dataset up to max_lenght
+            Params:
+                ds (TaskDataset): 
+                    The dataset to pad 
         '''
         padded = []
         for input_ids, target_ids, task in ds.examples:
@@ -100,9 +106,10 @@ class DataLoader:
 
     def get_loaders(self) -> tuple[TorchDataLoader, TorchDataLoader, TorchDataLoader]:
         '''
-        Returns:
-        --------
-            tuple[DataLoader, DataLoader, DataLoader]: train, val and test dataloaders
+            Function aimed to get loaders
+            Returns:
+                tuple[DataLoader, DataLoader, DataLoader]:
+                    Train, val and test dataloaders
         '''
         return self.train_loader, self.val_loader, self.test_loader
 

@@ -50,10 +50,10 @@ class TaskDataset(Dataset):
 
     def _load_csvs(self) -> pd.DataFrame:
         '''
-        Load all CSV files into a single DataFrame
-        returns:
-        --------
-            pd.DataFrame: A DataFrame containing all the data from the CSV files
+            Load all CSV files into a single DataFrame
+            Returns:
+                pd.DataFrame: 
+                    A DataFrame containing all the data from the CSV files
         '''
         # Check if there are any CSV files
         if not self.datasets:
@@ -77,13 +77,13 @@ class TaskDataset(Dataset):
 
     def _split(self, df: pd.DataFrame) -> pd.DataFrame:
         '''
-        Split the DataFrame into train, val, and test
-        Parameters:
-        -----------
-            df (pd.DataFrame): The DataFrame to split
-        Returns:
-        --------
-            pd.DataFrame: A DataFrame containing only the rows of the specified split
+            Split the DataFrame into train, val, and test
+            Params:
+                df (pd.DataFrame): 
+                    The DataFrame to split
+            Returns:
+                pd.DataFrame: 
+                    A DataFrame containing only the rows of the specified split
         '''
         # Get split names
         names = list(self.splits)
@@ -113,14 +113,15 @@ class TaskDataset(Dataset):
         '''
         Build a prompt string for the model
         
-        Parameters:
-        -----------
-            prompt (str): The prompt to build
-            task (str): The task to build the prompt for
+        Params:
+            prompt (str): 
+                The prompt to build
+            task (str): 
+                The task to build the prompt for
 
         Returns:
-        --------
-            str: The built prompt
+            str: 
+                The built prompt
         '''
         return f"{task}: {prompt} ="
 
@@ -128,28 +129,29 @@ class TaskDataset(Dataset):
     def build_answer(y: str) -> str:
         '''
         Build an answer string for the model    
-        Parameters:
-        -----------
-            y (str): The answer to build
-
+        Params:
+            y (str): 
+                The answer to build
         Returns:
-        --------
-            str: The built answer
+            str: 
+                The built answer
         '''
         return f" {y}"
 
     def _encode_example(self, prompt: str, y: str, task: str):
         '''
-        Encode a single example into input and target IDs for the model
-        Parameters:
-        -----------
-            prompt (str): The prompt to encode
-            y (str): The answer to encode
-            task (str): The task to encode
+            Encode a single example into input and target IDs for the model
+            Params:
+                prompt (str): 
+                    The prompt to encode
+                y (str): 
+                    The answer to encode
+                task (str): 
+                    The task to encode
 
-        Returns:
-        --------
-            tuple[list[int], list[int], int]: A tuple containing the input IDs, target IDs, and task index
+            Returns:
+                tuple[list[int], list[int], int]:
+                    A tuple containing the input IDs, target IDs, and task index
         '''
         # Encode prompt and answer separately to know where the answer starts
         prompt_ids = self.tokenizer.encode(self.build_prompt(prompt, task))
@@ -171,18 +173,20 @@ class TaskDataset(Dataset):
         return input_ids, target_ids, self.task_names.index(task)
 
     def __len__(self):
-        '''Return the number of examples in the dataset'''
+        '''
+            Return the number of examples in the dataset
+        '''
         return len(self.examples)
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor | int]:
         '''
-        Return a single example from the dataset
-        Parameters:
-        -----------
-            idx (int): The index of the example to return
-        Returns:
-        --------
-            dict[str, torch.Tensor | int]: A dictionary containing the input IDs, target IDs, and task index
+            Return a single example from the dataset
+            Parameters:
+                idx (int): 
+                    The index of the example to return
+            Returns:
+                dict[str, torch.Tensor | int]:
+                    A dictionary containing the input IDs, target IDs, and task index
         '''
         # Retrieve the previously created prompts
         input_ids, target_ids, task = self.examples[idx]
