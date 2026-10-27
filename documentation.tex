@@ -73,9 +73,9 @@ GPT-2 MoE. Universidad de Alicante, \paperdate.}}
 % RESUMEN
 % ------------------------------------------------------------
 \begin{center}
-  \bfseries Resumen  
+  \bfseries Resumen
 \end{center}
-  En el presente artículo se ofrecerá un estudio centrado en la capacidad o naturaleza de la especialización provista por modelos basados en arquitecturas híbridas que integran con pretendida sinergia el esquema base de GPT-2 junto con la variante compositiva provista por Mixture-of-Experts. Bajo dicho pretexto experimental, se evaluarán las divergencias o patrones de inferencia  expuestos por una pareja de modelos entrenados sobre distintos esquemas procedimentales que divergieron tanto en el número como granularidad de las etapas acontecidas. A su vez, y con objeto de validar la calidad de los esquemas arquitectónicos propuestos, se someterá a la totalidad de las implementaciones a un proceso de benchmarking cuya referencia  se encontrará anclada a la provista por un modelo denso de igual dimensionalidad que los sujetos de estudio. 
+  En el presente artículo se ofrecerá un estudio centrado en la capacidad o naturaleza de la especialización provista por modelos basados en arquitecturas híbridas que integran con pretendida sinergia el esquema base de GPT-2 junto con la variante compositiva provista por Mixture-of-Experts. Bajo dicho pretexto experimental, se evaluarán las divergencias o patrones de inferencia  expuestos por una pareja de modelos entrenados sobre distintos esquemas procedimentales que divergieron tanto en el número como granularidad de las etapas acontecidas. A su vez, y con objeto de validar la calidad de los esquemas arquitectónicos propuestos, se someterá a la totalidad de las implementaciones a un proceso de benchmarking cuya referencia  se encontrará anclada a la provista por un modelo denso de igual dimensionalidad que los sujetos de estudio.
 
 \vspace{-0.6em}
 {\small\leftskip=0.25in\rightskip=0.25in\noindent
@@ -86,7 +86,7 @@ GPT-2 MoE. Universidad de Alicante, \paperdate.}}
 \section{Introducción}
 \label{sec:intro}
 
-Durante la última década, tomando como punto de partida la presentación de la arquitectura Transformer \citep{vaswani2017att}, el NLP (Natural Language Processing) ha experimentado un salto cualitativo significativo. Con objeto de justificar dicha mejora, se localiza el que la supresión de la recurrencia en pos del paralelismo en lo que al procesamiento de tokens refiere ha tenido un componente esencial. 
+Durante la última década, tomando como punto de partida la presentación de la arquitectura Transformer \citep{vaswani2017att}, el NLP (Natural Language Processing) ha experimentado un salto cualitativo significativo. Con objeto de justificar dicha mejora, se localiza el que la supresión de la recurrencia en pos del paralelismo en lo que al procesamiento de tokens refiere ha tenido un componente esencial.
 
 Arquitecturas previas como RNN o sus versiones mejoradas GRU y RNN, confiaban en una propagación secuencial del estado oculto como metodología para modelar las dependencias entre tokens. Si bien dicho enfoque  obtenía resultados aceptables dentro de un marco y criterios concretos, respondía a un proceso de modelado implícito y acumulativo que imponía de manera estricta la integración en el contexto propio de aquello propagado hasta el momento. En este contexto de rigidez y secuencialidad, la arquitectura Transformer presenta un enfoque paralelo y adaptativo que favorece una contextualización individual acorde acorde con las necesidades de cada uno de los tokens, no incurriendo pues en la integración impuesta de información proveniente de un flujo de estado qu
 e no es en su totalidad de interés.
@@ -174,8 +174,28 @@ tipo de cómputo, no habría nada que repartir entre ellos. Cada una tiene una �
 \section{Experimentos}
 \label{sec:experiments}
 
-\subsection{E1: modelo denso}
+\subsection{Expert routing}
 \label{sec:e1}
+Como ya sabemos, el router es el encargado de distribuir los tokens entre los diferentes expertos. En la segunda arquitectura entrenamos a los expertos de manera forzada e independiente, de modo que cada uno se especializa en una tarea concreta. Como se observa en el heatmap \cref{fig:routing}, en la primera capa MoE cada experto es seleccionado para casi la totalidad de los tokens de su tarea (dado que cada token elige dos expertos y el máximo por celda es 0,5). Lo llamativo es como se van desvaneciendo las especializaciones a medida que se profundiza en las capas, se plantean las siguientes hipótesis:
+
+\begin{enumerate}[label=\textbf{H\arabic*.}, ref=H\arabic*, leftmargin=*, nosep]
+  \item \label{hyp:residual}
+    \emph{La representación que recibe el router cambia con la profundidad.}
+    La salida de cada capa MoE se suma al flujo residual, donde la siguiente FFN densa la lee y la transforma con pesos comunes a todas las tareas. Al repetirse en cada par de capas, la señal específica de tarea podría irse mezclando con el resto de la representación.
+  \item \label{hyp:balance}
+    \emph{El entrenamiento conjunto diluye la asignación experto--tarea.} Durante la fase conjunta, cada experto pasa a procesar tokens de otras tareas y a recibir sus gradientes, mientras que el término de balanceo de carga empuja al router hacia un reparto uniforme. Con el tiempo, los expertos dejarían de ser de su tarea y pasarían a repartirse el trabajo de forma más homogénea, lo que explicaría que la asociación entre experto y tarea sea cada vez más débil.
+\end{enumerate}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{src/images/router_hmaps/routing_heatmap.png}
+  \caption{Expert routing}
+  \label{fig:routing}
+\end{figure*}
+
+En la última arquitectura, donde ningún experto ha sido asignado a una tarea durante el entrenamiento, el heatmap no muestra una asociación clara entre tareas y expertos. Ya en la primera capa MoE el reparto es difuso (máximos en torno a 0,3), y la separación entre tareas se mantiene baja en todas las capas. A medida que aumenta la profundidad, varias tareas pasan a concentrarse en un mismo experto, dejando al resto sin utilizar. Este patrón no es de especialización por tarea, sino de concentración del tráfico en pocos expertos (monopolización), y sugiere que el balanceo de carga empleado no basta para evitarla. Cabe señalar que, como estos expertos no tienen una identidad previa, el número de cada uno solo es una etiqueta dentro de su capa .
+
+
 
 \subsection{E2: MoE con expertos preentrenados por tarea}
 \label{sec:e2}

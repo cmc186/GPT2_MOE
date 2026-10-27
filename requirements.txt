@@ -3,3 +3,4 @@ tiktoken
 pandas
 requests
 ipykernel
+seaborn
