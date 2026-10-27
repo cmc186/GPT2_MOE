@@ -38,7 +38,7 @@
 \usepackage[font=small,labelfont=bf,labelsep=colon]{caption}
 
 % ---------- Referencias y enlaces (autor-año, como AAAI) ----------
-\usepackage[authoryear,round]{natbib}
+\usepackage[numbers,square,sort&compress]{natbib}
 \setcitestyle{aysep={}}
 \usepackage[hidelinks,hyperfootnotes=false]{hyperref}
 \usepackage[spanish,noabbrev]{cleveref}
@@ -46,7 +46,7 @@
 % ============================================================
 % DATOS DEL DOCUMENTO
 % ============================================================
-\newcommand{\papertitle}{Specialization Schemes Review in GPT-like MoEs}
+\newcommand{\papertitle}{Induced Specialization Schemes in GPT-like MoEs}
 \newcommand{\paperdate}{25/10/2026}
 
 \pagestyle{plain}
@@ -86,9 +86,24 @@ GPT-2 MoE. Universidad de Alicante, \paperdate.}}
 \section{Introducción}
 \label{sec:intro}
 
-\paragraph{Trabajo relacionado}
+Durante la última década, tomando como punto de partida la presentación de la arquitectura Transformer \citep{vaswani2017att}, el NLP (Natural Language Processing) ha experimentado un salto cualitativo significativo. Con objeto de justificar dicha mejora, se localiza el que la supresión de la recurrencia en pos del paralelismo en lo que al procesamiento de tokens refiere ha tenido un componente esencial. 
 
-\paragraph{Contribuciones}
+Arquitecturas previas como RNN o sus versiones mejoradas GRU y RNN, confiaban en una propagación secuencial del estado oculto como metodología para modelar las dependencias entre tokens. Si bien dicho enfoque  obtenía resultados aceptables dentro de un marco y criterios concretos, respondía a un proceso de modelado implícito y acumulativo que imponía de manera estricta la integración en el contexto propio de aquello propagado hasta el momento. En este contexto de rigidez y secuencialidad, la arquitectura Transformer presenta un enfoque paralelo y adaptativo que favorece una contextualización individual acorde acorde con las necesidades de cada uno de los tokens, no incurriendo pues en la integración impuesta de información proveniente de un flujo de estado qu
+e no es en su totalidad de interés.
+
+
+Hablar de por qué los moes:
+1. Activación de subset de params solo
+2. Inferencia más asumible
+
+Explicar qué queremos hacer: evaluar activaciones con distintos modelos de entrenamiento y  hacer benchmarking
+
+
+
+
+
+
+
 
 % ------------------------------------------------------------
 \section{Tareas y datos}
@@ -193,6 +208,13 @@ tipo de cómputo, no habría nada que repartir entre ellos. Cada una tiene una �
 \renewcommand{\bibfont}{\small}
 \setlength{\bibsep}{3pt plus 1pt}
 \begin{thebibliography}{99}
+
+
+\bibitem[Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin(2017)]{vaswani2017att}
+Vaswani, A.; Shazeer, N.; Parmar, N; Uszkoreit, J; Jones, L; Gomez, A; Kaiser, L; y Polosukhin, I  . 2017.
+\newblock Attention Is All You Need.
+\newblock \emph{Advances in Neural Information Processing Systems (NeurIPS)}, vol. 30, pp. 5998--6008..
+
 
 \bibitem[Fedus, Zoph y Shazeer(2022)]{fedus2022switch}
 Fedus, W.; Zoph, B.; y Shazeer, N. 2022.
