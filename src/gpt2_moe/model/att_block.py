@@ -31,6 +31,8 @@ class MultiHeadAttention(nn.Module):
                        diagonal = 1)   
         )
 
+        self.att_weights = None
+
     def forward(self, x):
         # Get the shape (B, N, d_in)
         b, num_tokens, d_in = x.shape
@@ -62,6 +64,8 @@ class MultiHeadAttention(nn.Module):
         # Get attention weights
         attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
         attn_weights = self.dropout(attn_weights)
+        self.att_weights = attn_weights.detach().cpu()
+
 
         # Shape: (b, num_heads, num_tokens, head_dim) -> (b, num_tokens, num_heads, head_dim)
         context_vec = (attn_weights @ values).transpose(1, 2) 

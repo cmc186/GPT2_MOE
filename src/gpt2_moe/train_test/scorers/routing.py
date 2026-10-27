@@ -21,8 +21,8 @@ def route(model, input_ids:torch.Tensor, device:str)->dict[int, torch.Tensor]:
 
         Returns:
             routes(dict):
-                {layer_index: selected experts (B, N, k)}
-                Experts are sorted by weight -> [..., 0] is the top-1
+                A dict representing router probability
+                output (B, N, K) per moed layer
     """
     # Get the MoE layer indices -> (0, 2, 4, ...)
     layers = [i for i, use_moe in enumerate(model.moe_mask) if use_moe]
@@ -36,7 +36,7 @@ def route(model, input_ids:torch.Tensor, device:str)->dict[int, torch.Tensor]:
         model(input_ids.to(device = device))
 
     # Retrieve the routing state (B*N, k) -> (B, N, k)
-    return {layer: moe.last_selected.view(n_batches, tokens, -1).cpu()
+    return {layer: moe.last_selected.view(n_batches, tokens, -1).to(device = 'cpu')
             for layer, moe in zip(layers, model.moe_layers())}
 
 
@@ -57,11 +57,11 @@ def real_tokens(target_ids:torch.Tensor)->torch.Tensor:
     positions = torch.arange(target_ids.shape[-1])
     # Last answered position per example -> <|endoftext|> target (B,)
     last = torch.where(target_ids != IGNORE_INDEX, positions, -1).max(dim = -1).values
-    # Real tokens are the ones up to it (B, N)
+    # Real tokens are the ones up to it (B, N) -> tak broadcasting
     return positions.unsqueeze(0) <= last.unsqueeze(-1)
 
 
-def routing_matrix(model, loader, device:str)->torch.Tensor:
+def routing_matrix(model:object, loader:object, device:str)->torch.Tensor:
     """
         Function aimed to compute how often the tokens of
         each task are routed to each expert per MoE layer
@@ -85,25 +85,39 @@ def routing_matrix(model, loader, device:str)->torch.Tensor:
     n_exp = moes[0].n_exp
 
     # Define the counter (layers, tasks, experts)
-    counts = torch.zeros(len(moes), len(names), n_exp)
+    counts = torch.zeros(size = (len(moes), len(names), n_exp))
 
     # Iterate over batches
     for batch in loader:
         # Get the routing per layer {layer: (B, N, k)}
         routes = route(model, batch['input_ids'], device)
-        # Keep only real tokens (B, N)
+        # Keep only real tokens (B, N) -> set -100 to false
         mask = real_tokens(batch['target_ids'])
 
+        # Iterate per layer
         for i, selected in enumerate(routes.values()):
+            # Get shapes
+            B, N, K = selected.shape
             # Pair each assignation with its task (B, N, k)
-            task = batch['task'].view(-1, 1, 1).expand_as(selected)
-            valid = mask.unsqueeze(-1).expand_as(selected)
-            # Count task-expert pairs -> flat index task*E + expert
-            pairs = (task * n_exp + selected)[valid]
-            counts[i] += torch.bincount(pairs, minlength = len(names) * n_exp).view(len(names), n_exp).float()
+            task = batch['task'].view(B, 1, 1).repeat(1, N, K)
+            # Mask shape (B, N, 1) -> (B, N, K)
+            valid = mask.unsqueeze(-1).repeat(1, 1, K)
+            # Gen valid task expert pairs
+            # 1. Define expert_sized range per task -> [0, experts] unique identifier within task
+            expert_sized_range = task * n_exp
+            # 2. Generate global index
+            raw_pair = (expert_sized_range + selected)
+            # 3. Filter not valid pairs (-100 marked) -> (sum(mask))
+            pairs = raw_pair[valid]
+            # Populate layer: add vector counting [bin0, bin1, ..., bink] each bin belongs to an expert in a given task
+            raw_count = torch.bincount(pairs, minlength = len(names) * n_exp)
+            # Reshape into (tasks, experts)
+            polished_count = raw_count.view(len(names), n_exp).float()
+            # Increase layer count
+            counts[i]+=polished_count
 
-    # Normalize per task -> routing distribution
-    return counts / counts.sum(dim = -1, keepdim = True).clamp(min = 1)
+    # Normalize  to get a probability distro
+    return torch.divide(counts, counts.sum(dim = -1, keepdim = True))
 
 
 def routing_jsd(model, loader, device:str, **kwargs)->dict[str:float]:

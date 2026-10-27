@@ -45,13 +45,13 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
             # Generate prediction (B, S, |V|)
             logits = model(input)
             batch_size, seq_len, vocab_size = logits.shape
-            print('(ce_t) Prediction aspect:', logits.shape)
-            print('(ce_t) Answer shape:', target.shape)
-            print('(ce_t) Task shape:', task.shape)
+            #print('(ce_t) Prediction aspect:', logits.shape)
+            #print('(ce_t) Answer shape:', target.shape)
+            #print('(ce_t) Task shape:', task.shape)
 
             # Apply CE (B*S, |V|) -> get loss per token -> (B, S)
             tokens_loss = loss(logits.reshape(-1, logits.shape[-1]), target.reshape(-1)).reshape(batch_size, seq_len)
-            print('(ce_t) Loss Shape', tokens_loss.shape)
+            #print('(ce_t) Loss Shape', tokens_loss.shape)
             
             # Filter tokens
             valid_mask = target!=-100
@@ -61,7 +61,7 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
             for task_id, name in enumerate(names):
                 # Get examples from batch which belong to task
                 task_mask = task==task_id
-                print(F'     (ce_t)({name}) Aspect of the task mask:', valid_mask.shape)
+                #print(F'     (ce_t)({name}) Aspect of the task mask:', valid_mask.shape)
 
                 # Apply (B, S) and (B, 1) -->(B,S )
                 selected_mask = torch.bitwise_and(valid_mask, task_mask.unsqueeze(1))

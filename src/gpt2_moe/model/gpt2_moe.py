@@ -66,6 +66,19 @@ class GPTMOE(nn.Module):
         """
         return [block.ff for block in self.trf_blocks if block.use_moe]
 
+
+    def attn_mechanism(self)->list[torch.Tensor]:
+        """  
+            Function aimed to return the attention
+            weights matrices
+
+            Returns:
+                att_mat(list(torch.Tensor)):
+                    The list of tensors
+        
+        """
+        return [block.att.att_weights for block in self.trf_blocks]
+
     def set_forced_expert(self, idx:int)->None:
         """
             Function aimed to force an indexed 
