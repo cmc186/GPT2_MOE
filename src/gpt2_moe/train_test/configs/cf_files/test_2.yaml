@@ -27,7 +27,7 @@
     max_per_task: null
 
   EXPCONFIG:
-    name: 'E2_scratch_moe_alternate_local'
+    name: 'E2_scratch_moe_alternate'
     init_mode: random
     load_modality: False
     train_experts_individually: True
