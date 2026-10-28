@@ -21,7 +21,7 @@
 
   TRAIN:
     epochs: 50
-    bs: 32
+    bs: 64
     lr: 0.0003
     scorers: [exact_match]
     max_per_task: null
