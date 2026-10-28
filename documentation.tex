@@ -58,7 +58,7 @@
 % ============================================================
 % DATOS DEL DOCUMENTO
 % ============================================================
-\newcommand{\papertitle}{Induced Expert Specialization Schemes in Decoder-only Transformer MoE Architecturees}
+\newcommand{\papertitle}{Induced Expert Specialization Schemes in Decoder-only Transformer MoE Architectures}
 \newcommand{\paperdate}{25/10/2026}
 
 \pagestyle{plain}
@@ -78,8 +78,8 @@
 }]
 
 % Nota al pie de la primera columna (como el copyright de AAAI)
-{\renewcommand{\thefootnote}{}\footnotetext{\raggedright\footnotesize Memoria del proyecto
-GPT-2 MoE. Universidad de Alicante, \paperdate.}}
+{\renewcommand{\thefootnote}{}\footnotetext{\raggedright\footnotesize
+Código fuente: \url{https://github.com/cmc186/GPT2_MOE.git}.}}
 
 % ------------------------------------------------------------
 % RESUMEN
@@ -87,7 +87,7 @@ GPT-2 MoE. Universidad de Alicante, \paperdate.}}
 \begin{center}
   \bfseries Resumen
 \end{center}
-  En el presente artículo se ofrecerá un estudio centrado en la capacidad o naturaleza de la especialización provista por modelos basados en arquitecturas Transformer del tipo decoder-only que integran con pretendida sinergia el esquema compositivo provisto por Mixture-of-Experts. Bajo dicho pretexto experimental, se evaluarán las divergencias o patrones de inferencia  expuestos por una pareja de modelos entrenados sobre distintos esquemas procedimentales que divergieron tanto en el número como granularidad de las etapas acontecidas. A su vez, y con objeto de validar la calidad de los esquemas arquitectónicos propuestos, se someterá a la totalidad de las implementaciones a un proceso de benchmarking cuya referencia  se encontrará anclada a la provista por un modelo denso de igual dimensionalidad que los sujetos de estudio.
+  En el presente artículo se ofrecerá un estudio centrado en la capacidad o naturaleza de la especialización provista por modelos basados en arquitecturas Transformer del tipo decoder-only que integran con pretendida sinergia el esquema compositivo provisto por Mixture-of-Experts. Bajo dicho pretexto experimental, se evaluarán las divergencias o patrones de inferencia  expuestos por una pareja de modelos entrenados sobre distintos esquemas procedimentales que divergieron tanto en el número como granularidad de las etapas acontecidas. A su vez, y con objeto de validar la calidad de los esquemas arquitectónicos propuestos, se someterá a la totalidad de las implementaciones a un proceso de benchmarking cuya referencia  se encontrará anclada a la provista por un modelo denso de igual dimensionalidad que los sujetos de estudio, deduciendo de manera final que las divergencias existentes no se tornan como contextualizadamente significativas.
 
 \vspace{-0.6em}
 {\small\leftskip=0.25in\rightskip=0.25in\noindent
@@ -98,17 +98,14 @@ GPT-2 MoE. Universidad de Alicante, \paperdate.}}
 \section{Introducción}
 \label{sec:intro}
 
-Durante la última década, tomando como punto de partida la presentación de la arquitectura Transformer \citep{vaswani2017att}, el NLP (Natural Language Processing) ha experimentado un salto cualitativo significativo. Con objeto de justificar dicha mejora, se localiza el que la supresión de la recurrencia en pos del paralelismo en lo que al procesamiento de tokens refiere haya tenido un componente esencial.
-
-Arquitecturas previas como las redes recurrentes (RNN) y sus variantes, entre que destacan  GRU y LSTM, confiaban en una propagación secuencial del estado oculto como metodología para modelar las dependencias entre tokens. Si bien dicho enfoque  demostraba su aplicabilidad en ciertas tareas, respondía a un proceso de modelado implícito y acumulativo que imponía de manera estricta la integración en el estado propio de aquello propagado hasta el momento. En este contexto de rigidez y secuencialidad, la arquitectura Transformer ofrece un enfoque paralelo y adaptativo que favorece una contextualización individual acorde  con las necesidades de cada uno de los tokens, no incurriendo pues en la integración impuesta de información proveniente de un flujo de estado pervertido o que no es en su totalidad de interés.
+Durante la última década, la introducción de la arquitectura Transformer \citep{vaswani2017att} ha supuesto un avance significativo en el NLP (Natural Language Processing),  atribuyendo dicha mejora en gran medida a la supresión de la recurrencia en pos del procesamiento paralelo de tokens. Frente a las redes recurrentes (RNN) y sus variantes, como GRU y LSTM, que confiaban en un modelado de  las dependencias mediante la propagación secuencial del estado oculto, el Transformer ofrece una contextualización adaptativa basada en mecanismos de atención,  no incurriendo pues en la integración impuesta de información proveniente de un flujo de estado pervertido o que no es en su totalidad de interés.
 
 
-No obstante, dicha mejora contextual impone por diseño arquitectónico la incorporación de un componente o capa densa cuya aplicabilidad es estática a la totalidad de los tokens. Consecuentemente, se induce una discordancia entre cómputo necesario e  impuesto que auspicia un sobrecoste paramétrico que limita de manera significativa la escalabilidad del modelo.
+No obstante, dicha mejora contextual impone por diseño arquitectónico una capa densa cuya aplicabilidad es estática a la totalidad de los tokens. Consecuentemente, se induce una discordancia entre cómputo necesario e  impuesto que auspicia un sobrecoste paramétrico que limita la escalabilidad del modelo y motiva la aparición de arquitecturas tales como Mixture-of-Experts\citep{shazeer2017moe}, cuyo objeto es proveer una activación condicional de los parámetros acorde con la naturaleza de la entrada. Para ello, se incorpora un mecanismo de enrutamiento que conduce  cada token hacia un subconjunto de expertos cuya morfología responde a una versión escalada de la capa densa proyectada en la arquitectura Tranformer original. De este modo, es esa  \textbf{activación paramétrica sparse} la que posibilita el incremento de la capacidad total del modelo sin que ello incurra en un crecimiento proporcional del coste por token en inferencia.
 
 
-Así pues, y con objeto de flexibilizar dicha activación ineficiente, surgen arquitecturas tales como Mixture-of-Experts\citep{shazeer2017moe} cuyo objeto es proveer una activación condicional de los parámetros acorde con la naturaleza de la entrada deseada. Para ello, la arquitectura incorpora un mecanismo de enrutamiento que conduce cada uno de los tokens seleccionados hacia un subconjunto de expertos cuya morfología responde a una versión escalada de la capa densa proyectada en la arquitectura Tranformer original. De este modo, es esa  \textbf{activación paramétrica sparse} la que posibilita el incremento de la capacidad total del modelo sin que ello incurra en un crecimiento proporcional del coste por token en inferencia.
 
-Bajo dicho pretexto, resulta pertinente el conducir un desarrollo experimental que circunde los principios subyacentes de la arquitectura  MOE. En particular, el desarrollo posterior se orientará hacia el ejercicio de un estudio relativo a la naturaleza de la especialización adquirida por parte de los expertos integrados en una modificación de la arquitectura Transformer decoder-only convencional,  manteniendo el esquema de normalización post-norm. Asimismo, la calidad de los resultados obtenidos se contrastará vía benchmarking con respecto a los ofrecidos por parte de  un modelo denso de referencia; pudiendo así evaluar las componentes de coste y calidad relativas a la inferencia.
+Bajo dicho pretexto, resulta pertinente  conducir un desarrollo experimental que circunde los principios subyacentes de la arquitectura  MoE. Concretamente, el desarrollo posterior se orientará hacia  un estudio relativo a la naturaleza de la especialización adquirida por parte de los expertos integrados en una modificación de la arquitectura Transformer decoder-only convencional,  manteniendo el esquema de normalización post-norm. Asimismo, la bondad de los resultados obtenidos se contrastará vía benchmarking con los de un modelo denso de referencia, permitiendo así evaluar de manera formal la calidad relativa a la inferencia.
 
 En particular, e incidiendo sobre la hibridación que guía el desarrollo experimental, remarcar el que se trabajará bajo dos variantes que permitirán evaluar el resultante de la especialización de los expertos bajo un set de tareas $T$ y que serán provistas de acuerdo con el regimen concreto de entrenamiento adoptado.
 
@@ -128,18 +125,14 @@ En particular, e incidiendo sobre la hibridación que guía el desarrollo experi
 \section{Tareas y datos}
 \label{sec:data}
 
-Dispuesta la introducción, y bajo la necesidad de contar con un conjunto de muestras hábil para el desarrollo del entrenamiento y las labores que a la inferencia son vinculadas, se constituyó un dataset sintético integrado por un set de tareas disjuntas $T$ a que se atribuyó una única respuesta correcta. Véase pues el aspecto de dicho conjunto:
+Con objeto de disponer de un conjunto de muestras hábil para el desarrollo del entrenamiento y las labores que a la inferencia son vinculadas, se constituyó un dataset sintético integrado por un set de tareas disjuntas $T$ a que se atribuyó una única respuesta correcta. Su composición es la siguiente:
 
 $$T = \{\text{add\_sub},\text{mul\_div}, \text{alphabetic}, \text{spell}, \text{parity}, \text{first\_last}\} $$
 
-En cuanto a las tareas componentes $t_i$, cabe destacar su cobertura capacitiva diversa  e ilustrada mediante la exigencia de la  suma y el  producto, la transformación de toda la secuencia de entrada, el acceso a posiciones concretas e incluso mediante la exigencia labores de clasificación binaria. Además, las tareas consideradas en el dataset no presentan regularidad en lo que a la longitud de la respuesta refiere, sino que esta última puede variar desde un único token en la paridad hasta más de veinte en la ordenación o el deletreo; pudiendo exponer incluso divergencias en el vocabulario empleado al servirse este último de dígitos, letras y símbolos. Es dicha heterogeneidad pretendida la que alimenta el afán de especialización de los expertos, puesto que si todas las tareas
-
-exigieran el mismo de cómputo, no habría nada que repartir entre ellos.
+En cuanto a las tareas componentes $t_i$, cabe destacar su cobertura capacitiva diversa  e ilustrada mediante la exigencia de operaciones aritméticas, transformaciones de secuencias, acceso a posiciones concretas e incluso clasificación binaria. Además, las tareas presentan longitudes de respuesta variables, desde un único token en la paridad hasta más de veinte en la ordenación o el deletreo; pudiendo exponer incluso divergencias en el vocabulario empleado al servirse este último de dígitos, letras y símbolos. Es dicha heterogeneidad pretendida la que alimenta el afán de especialización de los expertos, puesto que si todas las tareas exigieran el mismo tipo de cómputo, no habría nada que repartir entre ellos.
 
 
-
-
-Matizado esto, y de manera relativa al cómo de la constitución del dataset sintético enunciado, cabe notar el que este responda a una generación independiente por tarea cuya reproducibilidad es garantizada vía la provisión de una semilla (42). En cuanto al contenido generado, su formato de almacenamiento será CSV y cada una de sus filas componentes vendrá definida por una entrada (prompt) y una respuesta esperada (y); convirtiendo de manera última cada instancia en la siguiente secuencia:
+Matizado esto, y de manera relativa al cómo de la constitución del dataset sintético enunciado, cabe notar el que responda a una generación independiente por tarea cuya reproducibilidad es garantizada vía una semilla (42). El dataset se almacena en formato CSV, con una entrada (prompt) y una respuesta esperada (y) por fila conformando la siguiente la secuencia:
 
 $$\text{tarea}:\text{prompt}  = \text{y}$$
 
@@ -166,21 +159,21 @@ $$\text{tarea}:\text{prompt}  = \text{y}$$
 % ------------------------------------------------------------
 \section{Arquitectura}
 \label{sec:arch}
-Tal y como se había enunciado, la arquitectura propuesta parte de un Transformer del tipo decoder-only cuya estructura será modificada vía la incorporación de capas MoE en sustitución del bloque  representativo de la FFN (Fig ~\ref{fig:arquitectura}). El objetivo que se persigue es el estudio acerca de cómo diferentes esquemas de entrenamiento afectan a la especialización de los expertos y al rendimiento  del modelo ante el set de tareas planteado
+Tal y como se había enunciado, la arquitectura propuesta parte de un Transformer del tipo decoder-only cuya estructura se modifica vía la incorporación de capas MoE en sustitución del bloque  FFN (Fig ~\ref{fig:arquitectura}). El objetivo que se persigue es el estudio acerca de cómo diferentes esquemas de entrenamiento afectan a la especialización de los expertos y al rendimiento del modelo ante el set de tareas planteado.
 
 
 \subsection{Modelo base}
 \label{sec:base}
 
-De manera relativa al esqueleto arquitectónico de que se parte, cabe decir que se organiza en un conjunto de bloques transformer que integran el mecanismo de self-attention particularizado para CLM junto con una red FFN, sumado todo ello a la presencia de  conexiones residuales y normalizaciones ejercidas de acuerdo con el esquema post-norm.
+De manera relativa al esqueleto arquitectónico de que se parte, cabe decir que se organiza en un conjunto de bloques transformer que integran el mecanismo de self-attention particularizado para CLM junto con una red FF, sumado todo ello a la presencia de  conexiones residuales y normalizaciones  de acuerdo con el esquema post-norm.
 
-No obstante, y tal y como se adelantaba, será el bloque denso quien se torne el punto de modificación arquitectónico y cuya supresión permitirá la inyección de las MoE layers, manteniendo no obstante el resto de la arquitectura básica planteada.
+No obstante, y tal y como se adelantaba, será el bloque denso quien se torne el punto de modificación arquitectónico y cuya supresión permitirá la inyección de las MoE layers, manteniendo, sin embargo, el resto de la arquitectura intacta.
 
 
 \subsection{MoE Layer}
 \label{sec:moe}
 
-La capa MoE se compone de un conjunto de $n$ redes independientes a que denominamos expertos $E_i$ y cuya atribución en materia de tokens viene dictada por un enrutador $G$. Dicho componente será el encargado de computar una distribución de importancia sobre los expertos y  conservar aquellos $K<=n$ que sean representativos de la mayor certidumbre atributiva:
+La capa MoE se compone de un conjunto de $n$ redes independientes a que denominamos expertos $E_i$ y cuya asignación de tokens viene dictada por un enrutador $G$. Dicho componente será el encargado de computar una distribución de importancia sobre los expertos y  conservar aquellos $K<=n$ que sean representativos de la mayor certidumbre atributiva:
 
 $$\text{Experts Set} = \{E_1, E_2, ..., E_n\}$$
 
@@ -188,17 +181,17 @@ $$G(h_{l}) = \text{Softmax}(TopK(h_l \cdot W_g))$$
 
 $$G: R^{\:t\: x \: de}\xrightarrow{} R^{\:t\:x\:n}$$
 
-donde $h_{l}$ es el estado oculto de del bloque transformer con que estamos trabajando, $d_e$ la dimensión de embedding y $t$ el número de tokens atribuido a una entrada single.
+donde $h_{l}$ es el estado oculto  del bloque Transformer, $d_e$ la dimensión de embedding y $t$ el número de tokens atribuido a una entrada single.
 
-El resultado final  o salida de la capa se atribuye a  una suma ponderada normalizada, ya sea de manera explícita o implícita,
-de la importancia atribuida a los expertos seleccionados con la salida que cada uno de ellos ofrece:
+La salida de la capa se atribuye a  una suma ponderada normalizada, ya sea de manera explícita o implícita,
+de las salidas de los expertos seleccionados de acuerdo con la importancia que les atribuye el enrutador:
 
 $$h_{i} = \sum^n G(h_l)_{in} \cdot E_n(h_l)$$
 
-teniendo en cuenta que, de acuerdo con la formulación planteada, aquellos expertos que se encuentren fuera del top-k serán provistos de una importancia nula.
+teniendo en cuenta que, siguiendo la formulación planteada, aquellos expertos que se encuentren fuera del top-k serán provistos de una importancia nula.
 
 \subsection{Regularización por factor de carga}
-A su vez, y con objeto de conformar una distribución eficiente de los tokens sobre los expertos y evitar tanto un problema de overload como de starvation, se incluye un término de regularización opcional sobre la cross entropy \citep{fedus2022switch}:
+A su vez, y con objeto de conformar una distribución eficiente de los tokens sobre los expertos y evitar tanto un problema de overload como de starvation, se incluye un término  opcional de regularización sobre la cross entropy \citep{fedus2022switch}:
 
 
 $$\text{Reg} = \alpha \cdot N \cdot \sum_{i=1}^{N} f_i \cdot P_i$$
@@ -207,7 +200,7 @@ $$\text{Reg} = \alpha \cdot N \cdot \sum_{i=1}^{N} f_i \cdot P_i$$
 donde $\alpha$ es un hiperparámetro configurable, $f_i$ la fracción de tokens atribuidos a $E_i$ y $P_i$ la fracción de probabilidad  que  el router le atribuye. % ------------------------------------------------------------
 \section{Entrenamiento y setup experimental}
 \label{sec:train_n_setup}
-Como ya se adelantaba en secciones anteriores, el entrenamiento se estructura en dos fases cuya dependencia no expone reciprocidad y cuya existencia es relativa al schedule concreto adoptado. Sea pues el siguiente listado:
+Como ya se adelantaba, el entrenamiento se estructura en dos fases cuya dependencia no expone reciprocidad y cuya existencia es relativa al schedule concreto adoptado. Sea pues el siguiente listado componente:
 
 \begin{itemize}
 
@@ -215,7 +208,7 @@ Como ya se adelantaba en secciones anteriores, el entrenamiento se estructura en
 Aquella relativa al entrenamiento secuencial de cada uno de los $E_i$ bajo la consideración de una $T_i$ concreta.
 
 \item{\textbf{Fase de entrenamiento conjunto (JT)}}:
-Responde al entrenamiento de la totalidad del modelo, integrando los resultados de etapas anteriores en el caso de que aplique.
+Responde al entrenamiento de la totalidad del modelo, integrando, cuando procedde, los resultados de etapas anteriores.
 
     $$IS\rightarrow JT \quad \land \quad JT\nrightarrow IS$$
 
@@ -230,9 +223,9 @@ Será pues sobre dicha categorización que se definan las variantes de modelos e
     Responde a la arquitectura de referencia y a que  se atribuye inapelablemente un esquema de entrenamiento del tipo $JT $
 
 \item{\textbf{E2}}:
-    Atiende a la arquitectura híbrida enunciada que integra los bloques MoE en las indexaciones pares $[0, 2, 4, 6, 8]$. Respecto al schedule concreto adopatado, responde a un esquema $IS\rightarrow JT \quad$
+    Atiende a la arquitectura híbrida descrita que integra los bloques MoE en las indexaciones pares $[0, 2, 4, 6, 8]$. Respecto al schedule concreto adoptado, responde a un esquema tipo $IS\rightarrow JT \quad$
 
-\item{\textbf{E3}}:     Atiende a una arquitectura de la misma índole y configuración que $E2$, pero que adopta un schedule de entrenamiento del  tipo $JT\quad$
+\item{\textbf{E3}}:     Atiende a una arquitectura de la misma índole y configuración que $E2$, pero entrenada mediante el esquema $JT\quad$
 
 \end{itemize}
 
@@ -243,20 +236,19 @@ adoptada, siendo $50$ en el caso de IS y $15$ en el de JT. Respecto
 a los hiperparámetros fijos empleados, se localiza la toma del
 optimizador AdamW con un lr base de $10^{-3}$, el uso del Cosine
 LRScheduler y un batch size de 64. La selección del checkpoint se
-realiza en función de la métrica \emph{Exact Match} (EM) calculada
+realiza en función de la métrica task-oriented \emph{Exact Match} (EM) calculada
 sobre el conjunto de validación, considerando la coincidencia exacta
 entre la respuesta generada y la respuesta de referencia.
 
-En cuanto a la función de pérdida adoptada, la entropía cruzada se emplea tanto durante la fase de especialización individual de los expertos como durante la fase conjunta del modelo denso. Por otro lado, en la fase final de los experimentos E2 y E3, se incorpora la regularización por balanceo de carga descrita previamente, particularizada para un coeficiente \(\alpha = 0.01\) \citep{fedus2022switch}.
+En cuanto a la función de pérdida adoptada, la entropía cruzada se emplea tanto durante la fase de especialización individual como durante la fase conjunta del modelo denso. Por otro lado, en la fase final de los experimentos E2 y E3, se incorpora la regularización por balanceo de carga descrita previamente, particularizada para un coeficiente \(\alpha = 0.01\) \citep{fedus2022switch}.
 
-Finalmente, y de manera relativa al entorno y los tiempos de ejecución, remarcar que la totalidad de los modelos fueron entrenados bajo una NVIDIA RTX PRO 6000 Blackwell Server Edition durante un  set de lapsos temporales (horas) $\{12, 15, 36\}$ que se mapea de manera ordenada con la indexación provista a los experimentos
-
+Todos los modelos se entrenaron en una NVIDIA RTX PRO 6000 Blackwell Server Edition, con tiempos de ejecución de 12, 15 y 36 horas para $E1$, $E2$ y $E3$, respectivamente.
 
 % ------------------------------------------------------------
 \section{Experimentos}
 \label{sec:experiments}
 
-Dispuesto el marco experimental y la metodología, cabe desarrollar los experimentos conducidos sobre el set de modelos constituidos:
+Dispuesto el marco experimental y la metodología, cabe desarrollar los experimentos conducidos sobre el set de modelos constituido:
 $$\{E1, E2, E3\}$$
 
 \begin{figure*}[!t]
@@ -268,7 +260,7 @@ $$\{E1, E2, E3\}$$
 
 \subsection{Benchmarking}
 \label{sec:e1}
-Tal y como se desarrollaba inicialmente, se torna como necesario el ofrecer una comparativa en que se evalúe a nivel métrico la bondad de las arquitecturas híbridas propuestas frente al modelo denso que actúa como ancla cognitiva. Para poblar dicha comparativa, se empleará una pareja de métricas dispuestas para elucubrar acerca de la certidumbre  y calidad de las respuestas inferidas por el sistema:
+Tal y como se desarrollaba inicialmente, se torna como necesario el ofrecer una comparativa en que se evalúe a nivel métrico la bondad de las arquitecturas híbridas propuestas frente al modelo denso que actúa como valor de referencia. Para poblar dicha comparativa, se empleará una pareja de métricas dispuestas para elucubrar acerca de la certidumbre  y calidad de las respuestas inferidas por el sistema:
 
 {
 \setlength{\tabcolsep}{2pt}
@@ -321,38 +313,37 @@ Como se observa en las tablas, el rendimiento expuesto es ciertamente similar, t
 
 \subsection{Expert routing}
 \label{sec:e1}
-Como ya sabemos, el router es el encargado de distribuir los tokens entre los diferentes expertos. En la segunda arquitectura entrenamos a los expertos de manera forzada e independiente, de modo que cada uno se especializa en una tarea concreta. Como se observa en el heatmap (\cref{fig:routing}), en la primera capa MoE cada experto es seleccionado para casi la totalidad de los tokens de su tarea (dado que cada token elige dos expertos y el máximo por celda es 0,5). Lo llamativo es cómo se van desvaneciendo las especializaciones a medida que se profundiza en las capas. Se plantean las siguientes hipótesis:
+Como ya sabemos, el router es el encargado de distribuir los tokens entre los diferentes expertos. En la segunda arquitectura (E2) entrenamos a los expertos de manera forzada e independiente, de modo que cada uno se especializa en una tarea concreta. Como se observa en el conjunto de heatmaps (\cref{fig:routing}), en la primera capa MoE cada experto es seleccionado para casi la totalidad de los tokens de su tarea (dado que cada token elige dos expertos y el máximo por celda es 0,5). Lo llamativo es cómo se van desvaneciendo las especializaciones a medida que se profundiza en las capas. Se plantean las siguientes hipótesis:
 
 \begin{enumerate}[label=\textbf{H\arabic*.}, ref=H\arabic*, leftmargin=*, nosep]
   \item \label{hyp:residual}
     \emph{La representación que recibe el router cambia con la profundidad.}
-    La salida de cada capa MoE se suma al flujo residual, donde la siguiente FFN densa la lee y la transforma con pesos comunes a todas las tareas. Al repetirse en cada par de capas, la señal específica de tarea podría irse mezclando con el resto de la representación.
+    La salida de cada capa MoE se suma al flujo residual, donde la siguiente FFN  la lee y la transforma con pesos comunes a la totalidad de las tareas. Al repetirse en cada par de capas, la señal específica de tarea podría irse mezclando con el resto de la representación.
   \item \label{hyp:balance}
-    \emph{El entrenamiento conjunto diluye la asignación experto--tarea.} Durante la fase conjunta, cada experto pasa a procesar tokens de otras tareas y a recibir sus gradientes, mientras que el término de balanceo de carga empuja al router hacia un reparto uniforme. Con el tiempo, los expertos dejarían de ser de su tarea y pasarían a repartirse el trabajo de forma más homogénea, lo que explicaría que la asociación entre experto y tarea sea cada vez más débil.
+    \emph{El entrenamiento conjunto diluye la asignación experto--tarea.} Durante la fase conjunta, cada experto pasa a procesar tokens de otras tareas y a recibir sus gradientes, mientras que el término de balanceo de carga empuja al router hacia un reparto uniforme. Con el tiempo, los expertos dejarían de centrarse en su tarea de origen y pasarían a repartirse el trabajo de forma más homogénea, lo que explicaría que la asociación entre experto y tarea sea cada vez más débil.
 \end{enumerate}
 
-En la última arquitectura, donde ningún experto ha sido asignado a una tarea durante el entrenamiento, el heatmap no muestra una asociación clara entre tareas y expertos. Ya en la primera capa MoE el reparto es difuso (máximos en torno a 0,3), y la separación entre tareas se mantiene baja en todas las capas. A medida que aumenta la profundidad, varias tareas pasan a concentrarse en un mismo experto, dejando al resto sin utilizar. Este patrón no es de especialización por tarea, sino de concentración del tráfico en pocos expertos (monopolización), y sugiere que el balanceo de carga empleado no basta para evitarla. Cabe señalar que, como estos expertos no tienen una identidad previa, el número de cada uno solo es una etiqueta dentro de su capa.
+En la última arquitectura (E3), donde ningún experto ha sido asignado a una tarea durante el entrenamiento, el heatmap no demuestra una asociación clara entre tareas y expertos. Ya en la primera capa MoE el reparto es difuso (máximos en torno a 0,3), y la separación entre tareas se mantiene baja en todas las capas. A medida que aumenta la profundidad, varias tareas pasan a concentrarse en un mismo experto, dejando al resto sin utilizar. Este patrón no es de especialización por tarea, sino de concentración del tráfico en pocos expertos (monopolización), y sugiere que el balanceo de carga empleado no basta para evitarla. Cabe señalar que, como estos expertos no tienen una identidad previa vinculada a una tarea concreta, el número de cada uno solo es una etiqueta identificativa dentro de su capa.
 
 
 \subsection{Token tracking}
 \label{sec:e2}
-A primera vista las trazas de la \cref{fig:trace} resultan irregulares: el experto elegido cambia de un token a otro y de una capa a otra. En cada capa el router asigna al experto seleccionado una probabilidad claramente superior a la del resto, y los casos de empate entre las primeras opciones son excepcionales. Esta distribución tan complicada de analizar se debe a estos factores:
+A primera vista, las trazas de la \cref{fig:trace} resultan irregulares: el experto elegido cambia de un token a otro y de una capa a otra. En cada capa el router asigna al experto seleccionado una probabilidad claramente superior a la del resto, y los casos de empate entre las primeras opciones son excepcionales. Esta distribución tan complicada de analizar se debe a estos factores:
 
 \begin{itemize}[label={\raisebox{0.2ex}{\scriptsize$\square$}}, leftmargin=*, nosep]
-\item \emph{El enrutamiento depende del tipo de token que se procesa.}
-En las primeras capas, el modelo apenas dispone de más información sobre cada token que su propia identidad, de modo que el router decide en función de qué token tiene delante y no de a qué tarea pertenece. Por ello, los tokens que aparecen en todas las tareas (\texttt{:} y \texttt{=}) tienden a enviarse al mismo experto sea cual sea la tarea, y una secuencia formada por tokens de naturaleza miscelánea recorre distintos expertos. A medida que se avanza en profundidad, cada token incorpora más información de su contexto y este patrón se vuelve más evidente.
+\item \emph{El enrutamiento se decide token a token a partir de su identidad y su contexto.} El experto elegido es consistente (un mismo token en un mismo contexto se envía casi siempre al mismo experto), pero cambia entre los tokens de una secuencia, de modo que esta recorre varios expertos. La influencia de la tarea depende del modelo y de la capa: en las primeras capas de E2, donde el preentrenamiento asoció cada experto a una tarea, esta determina el experto incluso de tokens comunes como \texttt{:} y \texttt{=}, mientras que en E3 son estos tokens comunes los que tienden a coincidir entre tareas.
+
 
 \item \emph{Cada capa MoE cuenta con su propio router y sus propios expertos.}
 El número de un experto en una capa no guarda relación con el de otra. No hay motivo para que un token conserve el mismo número de experto entre capas consecutivas. La excepción es E2, donde los expertos con el mismo número se preentrenaron juntos y puede persistir cierta correspondencia entre capas (posiblemente atenuada por las capas FFN intercaladas, \ref{hyp:residual}).
 \end{itemize}
 
-Por ello, las trazas deben interpretarse capa a capa y atendiendo al tipo de token, y no como el recorrido de un token a través de la red.
+Por ello, las trazas deben interpretarse por capa y tipo de token, no como una trayectoria a través de la red.
 
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{src/images/token_trace/trace_parity.png}
-  \caption{Experto elegido por el router en cada capa MoE para cada token.}
+\includegraphics[height=4cm, keepaspectratio]{src/images/token_trace/trace_parity.png}  \caption{Experto elegido por el router en cada capa MoE para cada token.}
   \label{fig:trace}
 \end{figure}
 
@@ -360,13 +351,13 @@ Por ello, las trazas deben interpretarse capa a capa y atendiendo al tipo de tok
 % ------------------------------------------------------------
 \section{Conclusiones}
 \label{sec:conclusions}
+Los resultados obtenidos permiten matizar la relación entre la especialización de los expertos y la calidad de la inferencia en arquitecturas Transformer decoder-only con capas Mixture-of-Experts.
 
+El benchmarking no evidencia divergencias sustanciales entre $E1$, $E2$ y $E3$, tanto en la calidad como en la exactitud de las respuestas. Consecuentemente, bajo las condiciones experimentales establecidas, la incorporación de expertos y la especialización inducida no suponen una mejora significativa respecto al modelo denso de referencia.
 
+Por contrapartida, el análisis del enrutamiento evidencia el impacto de los schedules de entrenamiento. En $E2$, la especialización inicial se diluye con la profundidad, mientras que en $E3$ se observan patrones de acaparamiento del tráfico en determinados expertos. Asimismo, las trazas muestran que la asignación depende del token, su contexto y la capa considerada, sin constituir una trayectoria estable entre expertos.
 
-
-
-
-
+En conjunto, la especialización inducida no garantiza mejoras en la inferencia ni un reparto equilibrado de los expertos. Ello evidencia la necesidad de ampliar el dominio de aplicación y profundizar en el estudio para comprender los mecanismos subyacentes al comportamiento del modelo.
 
 
 
