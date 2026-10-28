@@ -1,4 +1,5 @@
 # Basic import
+import time
 import torch
 import torch.nn as nn
 
@@ -33,6 +34,7 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
     # Define storages
     loss_per_task = torch.zeros(len(names), dtype=torch.float64)
     tokens_per_task = torch.zeros(len(names), dtype=torch.long)
+    timer = []
 
     # Set model to eval
     model.eval()
@@ -43,7 +45,9 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
             target = batch['target_ids'].to(device = device)
             task = batch['task'].to(device = device)
             # Generate prediction (B, S, |V|)
+            start = time.time()
             logits = model(input)
+            timer.append(time.time() - start)
             batch_size, seq_len, vocab_size = logits.shape
             #print('(ce_t) Prediction aspect:', logits.shape)
             #print('(ce_t) Answer shape:', target.shape)
@@ -55,7 +59,7 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
             
             # Filter tokens
             valid_mask = target!=-100
-            print('(ce_t) Aspect of the mask:', valid_mask.shape)
+            #print('(ce_t) Aspect of the mask:', valid_mask.shape)
          
             # Filter tasks (task is a mask)
             for task_id, name in enumerate(names):
@@ -92,6 +96,7 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
 
     # Include the final mean
     results["mean"] = torch.mean(torch.tensor(final_mean)).item()
+    results["mean_time"] = sum(timer)/len(timer)
 
     return results
 

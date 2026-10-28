@@ -1,5 +1,6 @@
 # Basic Imports
 import torch
+import time
 
 # Relative imports
 from .common import per_task, split_example, greedy_answer
@@ -33,6 +34,9 @@ def exact_match(model, loader, device:str, max_per_task:int = None, **kwargs)->d
     correct = torch.zeros(len(names))
     total = torch.zeros(len(names))
 
+    # Define time estimation
+    timer = []
+
     # Iterate over batches
     for batch in loader:
         # Iterate within batches
@@ -43,7 +47,9 @@ def exact_match(model, loader, device:str, max_per_task:int = None, **kwargs)->d
             # Retrieve the  clean prompt and the answer
             prompt, answer = split_example(input, target)
             # Generate and decode with greedy method
+            start = time.time()
             prediction = greedy_answer(model, prompt.to(device), ds.eos_id, max_new = len(answer) + 5)
+            timer.append(time.time() - start)
             # Compare decoded strings without spaces -> exact matching
             matching = ds.tokenizer.decode(prediction).strip() == ds.tokenizer.decode(answer.tolist()).strip()
             # Register per class counter
@@ -51,4 +57,9 @@ def exact_match(model, loader, device:str, max_per_task:int = None, **kwargs)->d
             # Increase task counter for later aggregated metrics
             total[task] += 1
 
-    return per_task(correct, total, names)
+    # Get result dict
+    result = per_task(correct, total, names)
+    # Add mean inference time
+    result['mean_time'] = sum(timer) / len(timer) 
+
+    return result
