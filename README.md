@@ -1,9 +1,5 @@
 # GPT-2 Mixture of Experts: estudio de la especialización inducida
 
-Implementación de un modelo de lenguaje autorregresivo tipo **GPT-2** con capas **Mixture of Experts (MoE)** y evaluación experimental de cómo influye la estrategia de entrenamiento en la especialización de sus expertos.
-
-Proyecto desarrollado para la **Práctica 1 de Procesamiento del Lenguaje Natural I (curso 2026–2027)** de la **Universidad de Alicante**, a partir de la arquitectura GPT presentada en *Build a Large Language Model (From Scratch)*, de Sebastian Raschka.
-
 **Autores:** Carlos Molera Canals, Pablo García Beltrá, Linxi Jiang y Manuel García Romo.
 
 ## 1. Objetivo
@@ -45,9 +41,8 @@ La inserción de MoE es configurable mediante `moe_mask`: `none` (modelo denso),
 | Expertos por capa MoE | — | 6 |
 | Expertos activos por token y capa MoE | — | 2 (*Top-2*) |
 | Dimensión oculta FFN / experto MoE | 2.048 | 1.024 por experto |
-| Parámetros totales | 83.020.800 | 104.040.990 |
 
-En las capas MoE, la dimensión oculta de cada experto se ajusta en función de `k` (`4 × emb_dim / k`). Así, las dos FFN activas por token tienen una dimensión oculta total comparable a la FFN densa, aunque **el modelo MoE tiene más parámetros almacenados** y añade el coste del enrutamiento. No se presupone una mejora de velocidad o memoria: eso requeriría un *benchmark* específico.
+En las capas MoE, la dimensión oculta de cada experto se ajusta en función de `k` (`4 × emb_dim / k`). Así, las dos FFN activas por token tienen una dimensión oculta total comparable a la FFN densa, aunque **el modelo MoE tiene más parámetros almacenados** y añade el coste del enrutamiento. No se presupone una mejora de velocidad o memoria.
 
 Las tres configuraciones experimentales se inicializan **aleatoriamente**. El código también contiene utilidades para cargar pesos GPT-2 preentrenados y realizar *upcycling*, pero esas opciones no forman parte de los tres experimentos cuyos resultados se presentan aquí.
 
@@ -64,7 +59,7 @@ Se utiliza un conjunto **sintético y supervisado**, generado con `src/gpt2_moe/
 | `parity` | Devolver `0` si un número es par y `1` si es impar |
 | `first_last` | Devolver el primer y el último carácter de una cadena |
 
-El generador contempla **10.000 ejemplos por tarea** en su ejecución incluida, con semilla `42`. Los archivos CSV contienen las columnas `prompt` e `y`. Se eliminan duplicados y ejemplos demasiado largos, por lo que el número final de muestras puede ser inferior al generado.
+El generador contempla **100.000 ejemplos por tarea** en su ejecución incluida, con semilla `42`. Los archivos CSV contienen las columnas `prompt` e `y`. Se eliminan duplicados y ejemplos demasiado largos, por lo que el número final de muestras puede ser inferior al generado.
 
 El modelo recibe secuencias con la forma:
 
@@ -81,11 +76,11 @@ Se comparan tres enfoques:
 
 | Experimento | Modelo | Entrenamiento |
 |---|---|---|
-| **E1 — Dense baseline** | GPT denso, sin MoE | Entrenamiento conjunto de las seis tareas desde cero; 50 épocas, *batch size* 32. |
-| **E2 — MoE con especialización inducida** | MoE alterno, 6 expertos por capa y Top-2 | Primero se entrena cada experto por separado con una tarea asignada (50 épocas por experto, *batch size* 32), manteniendo el resto congelado y forzando su selección. Después se entrenan conjuntamente modelo y router durante 15 épocas. |
+| **E1 — Dense baseline** | GPT denso, sin MoE | Entrenamiento conjunto de las seis tareas desde cero; 15 épocas, *batch size* 64. |
+| **E2 — MoE con especialización inducida** | MoE alterno, 6 expertos por capa y Top-2 | Primero se entrena cada experto por separado con una tarea asignada (50 épocas por experto, *batch size* 64), manteniendo el resto congelado y forzando su selección. Después se entrenan conjuntamente modelo y router durante 15 épocas. |
 | **E3 — MoE conjunto** | Misma arquitectura MoE que E2 | Entrenamiento conjunto desde el inicio, sin preentrenamiento individual de expertos; 15 épocas, *batch size* 64. |
 
-Los tres utilizan `AdamW`, tasa inicial de aprendizaje `3e-4`, planificación `CosineAnnealingLR`, recorte de la norma del gradiente a `1.0` y la semilla `42` en la evaluación documentada.
+Los tres utilizan `AdamW`, tasa inicial de aprendizaje `3e-4`, planificación `CosineAnnealingLR`,gradient clipping a `1.0` y la semilla `42` en la evaluación documentada.
 
 **E2 y E3 comparten arquitectura, pero no presupuesto de entrenamiento:** E2 incluye seis etapas adicionales de entrenamiento supervisado. Por ello, la comparación permite estudiar diferencias observadas entre procedimientos, pero no aislar exclusivamente el efecto de la inicialización de los expertos.
 
@@ -125,20 +120,11 @@ Los modelos resuelven muy bien ordenación, paridad, deletreo y extracción del 
 
 ### 5.2. Especialización y enrutamiento
 
-La evaluación no se limita a la precisión. `experiments.ipynb` incluye mapas de calor de **frecuencia de asignación tarea–experto**, trazas de expertos seleccionados por token y capa, visualizaciones de atención y una prueba contrafactual en la que se cambia únicamente el nombre de la tarea en el *prompt*.
+La evaluación no se limita a la precisión. `experiments.ipynb` incluye mapas de calor de **frecuencia de asignación tarea–experto**, trazas de expertos seleccionados por token y capa y visualizaciones de atención.
 
 ![Distribución del enrutamiento por tarea, experto y capa, para E2 y E3](src/images/router_hmaps/routing_heatmap.png)
 
 En las primeras capas, **E2 muestra preferencias de enrutamiento más marcadas por tarea**. En E3 las asignaciones suelen aparecer más repartidas. Esta diferencia se atenúa o cambia entre capas: no implica que exista una asignación exclusiva y fija de cada tarea a un experto durante toda la red.
-
-En el experimento contrafactual se compara el experto Top-1 asignado a los tokens compartidos de un mismo *prompt* al sustituir su identificador de tarea por el de otras tareas:
-
-| Modelo | Proporción media de asignaciones Top-1 que cambian |
-|---|---:|
-| **E2: entrenamiento previo por experto** | **79,5 %** |
-| **E3: entrenamiento conjunto** | **38,1 %** |
-
-Estos resultados, calculados sobre los ejemplos concretos incluidos en el notebook, sugieren que **el router de E2 es más sensible al identificador explícito de tarea**. No constituyen por sí solos una demostración de especialización funcional independiente del nombre de la tarea.
 
 También se implementa una métrica de especialización basada en la **divergencia de Jensen–Shannon** entre distribuciones de enrutamiento por tarea (`routing_jsd`), aunque el *benchmark* numérico guardado compara explícitamente `exact_match` y `token_ce`.
 
@@ -242,7 +228,6 @@ El programa reutiliza checkpoints existentes y omite las etapas que ya dispongan
 
 Abrir `src/gpt2_moe/train_test/experiments.ipynb` y ejecutar las celdas después de haber generado los datos y obtenido los checkpoints. El notebook permite comparar pérdidas, `exact_match`, entropía cruzada por token, rutas de expertos, patrones de atención y sensibilidad del router a la etiqueta de tarea.
 
-**Nota de reproducibilidad:** el notebook de evaluación carga E2 desde un directorio llamado `E2_scratch_moe_alternate`, mientras que `test_2.yaml` define actualmente `E2_scratch_moe_alternate_local`. Para evaluar checkpoints creados con esa configuración hay que adaptar el nombre del directorio en el notebook. Los checkpoints históricos utilizados para producir las salidas guardadas en el notebook **no forman parte del repositorio**.
 
 ## 8. Referencias
 
