@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 
-def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
+def token_level_ce(model:object, loader:object, device:str, **kwargs)->dict[str:float]:
     """
         Function aimed to compute per token CE
 
@@ -18,7 +18,7 @@ def token_level_ce(model:object, loader, device:str, **kwargs)->dict[str:float]:
 
         Returns:
             results(dict):
-                A dict composed by task:score items
+                A dict composed by task:score items and also includes a mean inference time key
     """
     # Get the dataset and task names
     ds = loader.dataset

@@ -10,7 +10,6 @@ class ExperimentConfig():
     # Define constant values
     TASKS = ["add_sub", "mul_div", "alphabetic", "spell", "parity", "first_last"]
     BASE_DIR = os.path.join(Path(__file__).parents[1], 'configs/cf_files')
-
     print('CONFIG BASE DIR:', BASE_DIR)
 
     def __init__(self, name:str):
@@ -28,7 +27,6 @@ class ExperimentConfig():
         self.build_stages()
         self.stop_id = len(self.exp_cofig['stages'])
 
-        #print('Aspecto de la exp_cofig', self.exp_cofig)
 
     def get_model_params(self)->dict:
         """
@@ -77,16 +75,18 @@ class ExperimentConfig():
             format:
 
             STAGES:
-                name: 'E0'
-                init_mode: random
+                name: str
+                init_mode: str
+                load_modality: bool
+                train_experts_individually: bool
                 stages:
-                     - name: "test_1"
-                      groups:
-                     - router
-                     - ffn
-                      expert: null
-                      tasks: null
-                      loss: ce
+                - name: str
+                    groups: list[str]
+                    expert: bool
+                    tasks: bool
+                    loss: str
+                    loss_params:
+                        alpha: float
 
         """
         # Get stages data
@@ -134,7 +134,7 @@ class ExperimentConfig():
         print(f'The seeked file ({name}) does not exist')
         return  os.path.join(ExperimentConfig.BASE_DIR, 'test_1.yaml')
 
-    def load_yaml(self, name:str)->dict:
+    def load_yaml(self, name:str)->None:
         """
             Function aimed to conduct yaml file
             loading
@@ -144,8 +144,8 @@ class ExperimentConfig():
                     The name of the file to load
 
             Return:
-                data(dict):
-                    The dictionary containing retrieved params
+                None:
+                    No value is returned
 
 
         """

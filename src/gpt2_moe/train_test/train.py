@@ -200,7 +200,7 @@ def run(seed:int = seed, device:str = dev)->GPTMOE:
             seed(int):
                 Seed for init, split and shuffle
             device(str):
-                 Switch between cuda or cpu
+                Switch between cuda or cpu
                 Default value is 'cpu' 
 
         Returns:

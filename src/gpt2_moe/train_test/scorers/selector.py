@@ -15,7 +15,7 @@ class ScorerSelector():
     }
 
     @staticmethod
-    def run(names:list[str], model, loader, **kwargs)->dict:
+    def run(names:list[str], model:object, loader:object, **kwargs)->dict:
         """
             Function aimed to run every requested scorer
 

@@ -10,7 +10,7 @@ DATA_DIR = "data"
 
 class DataLoader:
     def __init__(self, tokenizer: Tokenizer, context_lenght: int, batch_size: int, seed: int = 42, fractions: tuple = (0.8, 0.1, 0.1), datasets: list = [], max_lenght: int | None = None):
-        '''
+        """
             Build the train, val and test dataloaders with every example padded to the same length
             Params:
                 tokenizer (Tokenizer): 
@@ -27,7 +27,7 @@ class DataLoader:
                     CSV paths. Empty -> every CSV inside data/
                 max_lenght (int | None): 
                     Padded length. None -> longest example of the training set
-        '''
+        """
         self.tokenizer = tokenizer
         self.context_lenght = context_lenght
         self.batch_size = batch_size
@@ -64,7 +64,7 @@ class DataLoader:
 
     @staticmethod
     def _longest(ds: TaskDataset) -> int:
-        '''
+        """
             Length of the longest example in a dataset
             Params:
                 ds (TaskDataset): 
@@ -72,13 +72,13 @@ class DataLoader:
             Returns:
                 int: 
                     Number of tokens of its longest input_ids
-        '''
+        """
         return max(len(input_ids) for input_ids, _, _ in ds.examples)
 
     def _check_lengths(self) -> None:
-        '''
+        """
             Make sure max_lenght fits in the model and every example fits in max_lenght
-        '''
+        """
         if self.max_lenght > self.context_lenght:
             raise ValueError(f"max_lenght={self.max_lenght} is bigger than context_lenght={self.context_lenght}")
 
@@ -88,12 +88,13 @@ class DataLoader:
                 raise ValueError(f"Example longer than max_lenght")
 
     def _pad(self, ds: TaskDataset) -> None:
-        '''
+        """
+
             Pad on the right every example of a dataset up to max_lenght
             Params:
                 ds (TaskDataset): 
                     The dataset to pad 
-        '''
+        """
         padded = []
         for input_ids, target_ids, task in ds.examples:
             n_pad = self.max_lenght - len(input_ids)
@@ -105,12 +106,13 @@ class DataLoader:
         ds.examples = padded
 
     def get_loaders(self) -> tuple[TorchDataLoader, TorchDataLoader, TorchDataLoader]:
-        '''
+        """
             Function aimed to get loaders
             Returns:
                 tuple[DataLoader, DataLoader, DataLoader]:
                     Train, val and test dataloaders
-        '''
+        """
+
         return self.train_loader, self.val_loader, self.test_loader
 
 

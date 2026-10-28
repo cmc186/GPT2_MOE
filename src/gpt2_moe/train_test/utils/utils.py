@@ -20,7 +20,7 @@ class Utils:
     """
 
     @staticmethod
-    def download_gpt2(name: str, model_dir:str)->torch.Tensor:
+    def download_gpt2(name: str, model_dir:str)->None:
         """
             Function aimed to load GPT2 weights
 
@@ -31,8 +31,8 @@ class Utils:
                     Base dir for model storage
 
             Returns:
-                weights (torch.Tensor):
-                    Tensor representing weights
+                None:
+                    No value is returned
 
         """
         # Check path existance
@@ -51,9 +51,19 @@ class Utils:
             print(f"Downloaded to {full_path}")
 
     @staticmethod
-    def assign(left:torch.Tensor, right:torch.Tensor):
+    def assign(left:torch.Tensor, right:torch.Tensor)->nn.Parameter:
         """
             Function aimed to assign weights
+
+            Params:
+                left(torch.Tensor):
+                    The target tensor
+                right(torch.Tensor):
+                    The source tensor
+            Returns:
+                params(nn.Parameter):
+                    Created param
+
         """
         if left.shape!=right.shape:
             raise ValueError(f"Shape mismatch. Left: {left.shape}, Right: {right.shape}")
@@ -290,7 +300,7 @@ class Utils:
 
             Groups:
                 base: embeddings, attention, norms and head
-                ffn: FF layers (non MoE blocks)
+                ffn: FF layers ( MoEn't blocks)
                 experts: experts of MoE blocks
                 router: gate of MoE blocks
 
@@ -419,6 +429,10 @@ class Utils:
                 key (str):
                     The base name
 
+                ext(str):
+                    The file extension
+                    Default value is empty
+
             Returns:
                 name(str):
                     The first available name
@@ -458,7 +472,7 @@ class Utils:
 
             Params:
                 tasks(list[str]):
-                    The task names (names must match csvs)
+                    The task names (names must match csv_s)
                 batch_size(int):
                     Examples per batch
                 context_length(int):

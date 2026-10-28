@@ -1,17 +1,3 @@
-# ============================================================
-# Proposed experiments
-#   Scratch (random init):  E1 dense baseline  | E2 MoE
-#   GPT-2 (loaded weights): E3 dense fine-tune | E4 per-task experts | E5 upcycling
-#
-# Data: 6 tasks x 1000 rows (800 train per task), longest example 36 tokens
-# GPT-2 init forces: context_length 1024, emb_dim 768, num_heads 12, qkv_bias True, n_layers <= 12
-# ============================================================
-
-
-# ------------------------------------------------------------
-# E1: dense baseline from scratch (reference for E2)
-# ------------------------------------------------------------
-
 MODEL_ATTR:
   vocab_size: 50257
   context_length: 64

@@ -6,7 +6,7 @@ import time
 from .common import per_task, split_example, greedy_answer
 
 
-def exact_match(model, loader, device:str, max_per_task:int = None, **kwargs)->dict[str:float]:
+def exact_match(model:object, loader:object, device:str, max_per_task:int = None, **kwargs)->dict[str:float]:
     """
         Function aimed to compute the exact match of the
         generated answer per task
@@ -24,7 +24,7 @@ def exact_match(model, loader, device:str, max_per_task:int = None, **kwargs)->d
 
         Returns:
             results(dict):
-                A dict composed by task:score items
+                A dict composed by task:score pairs and also includes mean inference time
     """
     # Get the dataset
     ds = loader.dataset

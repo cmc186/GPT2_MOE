@@ -21,7 +21,7 @@ def per_task(correct:torch.Tensor, total:torch.Tensor, names:list[str])->dict:
 
         Returns:
             results(dict):
-                {task_name: ratio, ..., 'mean': macro mean}
+                A dict containing per task  ratio and general mean
     """
     # Build the dict: exclude unexistent classes: ordered experts training approach
     results = {names[i]: (correct[i] / total[i]).item() for i in range(len(names)) if total[i] > 0 }
@@ -56,7 +56,7 @@ def split_example(input_ids:torch.Tensor, target_ids:torch.Tensor)->tuple[torch.
     return prompt, answer
 
 
-def greedy_answer(model, prompt:torch.Tensor, eos_id:int, max_new:int)->list[int]:
+def greedy_answer(model:object, prompt:torch.Tensor, eos_id:int, max_new:int)->list[int]:
     """
         Function aimed to generate an answer with greedy
         decoding until <|endoftext|> or max_new tokens 

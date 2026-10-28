@@ -49,12 +49,12 @@ class TaskDataset(Dataset):
                 self.examples.append(example)
 
     def _load_csvs(self) -> pd.DataFrame:
-        '''
+        """
             Load all CSV files into a single DataFrame
             Returns:
                 pd.DataFrame: 
                     A DataFrame containing all the data from the CSV files
-        '''
+        """
         # Check if there are any CSV files
         if not self.datasets:
             raise FileNotFoundError(f"No CSV found in {DATA_DIR}")
@@ -76,7 +76,7 @@ class TaskDataset(Dataset):
         return pd.concat(frames, ignore_index=True).drop_duplicates(ignore_index=True)
 
     def _split(self, df: pd.DataFrame) -> pd.DataFrame:
-        '''
+        """
             Split the DataFrame into train, val, and test
             Params:
                 df (pd.DataFrame): 
@@ -84,7 +84,7 @@ class TaskDataset(Dataset):
             Returns:
                 pd.DataFrame: 
                     A DataFrame containing only the rows of the specified split
-        '''
+        """
         # Get split names
         names = list(self.splits)
         # Get index por work-split
@@ -110,7 +110,7 @@ class TaskDataset(Dataset):
 
     @staticmethod
     def build_prompt(prompt: str, task: str) -> str:
-        '''
+        """
         Build a prompt string for the model
         
         Params:
@@ -122,12 +122,12 @@ class TaskDataset(Dataset):
         Returns:
             str: 
                 The built prompt
-        '''
+        """
         return f"{task}: {prompt} ="
 
     @staticmethod
     def build_answer(y: str) -> str:
-        '''
+        """
         Build an answer string for the model    
         Params:
             y (str): 
@@ -135,11 +135,11 @@ class TaskDataset(Dataset):
         Returns:
             str: 
                 The built answer
-        '''
+        """
         return f" {y}"
 
     def _encode_example(self, prompt: str, y: str, task: str):
-        '''
+        """
             Encode a single example into input and target IDs for the model
             Params:
                 prompt (str): 
@@ -152,7 +152,7 @@ class TaskDataset(Dataset):
             Returns:
                 tuple[list[int], list[int], int]:
                     A tuple containing the input IDs, target IDs, and task index
-        '''
+        """
         # Encode prompt and answer separately to know where the answer starts
         prompt_ids = self.tokenizer.encode(self.build_prompt(prompt, task))
         answer_ids = self.tokenizer.encode(self.build_answer(y)) + [self.eos_id]
@@ -173,13 +173,13 @@ class TaskDataset(Dataset):
         return input_ids, target_ids, self.task_names.index(task)
 
     def __len__(self):
-        '''
+        """
             Return the number of examples in the dataset
-        '''
+        """
         return len(self.examples)
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor | int]:
-        '''
+        """
             Return a single example from the dataset
             Parameters:
                 idx (int): 
@@ -187,7 +187,7 @@ class TaskDataset(Dataset):
             Returns:
                 dict[str, torch.Tensor | int]:
                     A dictionary containing the input IDs, target IDs, and task index
-        '''
+        """
         # Retrieve the previously created prompts
         input_ids, target_ids, task = self.examples[idx]
         return {

@@ -78,6 +78,8 @@ class BalancedLoss(nn.Module):
             Params:
                 source(torch.Tensor):
                     The  source tensor to build the mask
+                target(torch.Tensor):
+                    The target tensor to filter
                 token_id(int):
                     The token id 
                     Default value is -100

@@ -1,10 +1,4 @@
 
-# ------------------------------------------------------------
-# E3: MoE from scratch, same architecture as E2 (alternate, 6 experts, top-2)
-#     but trained jointly in a single stage: no per-task expert stages,
-#     the router learns the assignment by itself
-# ------------------------------------------------------------
-
   MODEL_ATTR:
     vocab_size: 50257
     context_length: 64

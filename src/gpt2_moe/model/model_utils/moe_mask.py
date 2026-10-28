@@ -33,10 +33,10 @@ def moe_mask(layers:int, schedule:str, offset:int = 1)->list[bool]:
                 Default value is one
 
         Returns:
-            A tuple of:
-                - list[bool]: List representing MoE location
+                list(bool):
+                    List representing MoE location
     """
-        # Check if casual option matches
+    # Check if casual option matches
     if isinstance(schedule, str):
         cleaned_request = schedule.lower()
 

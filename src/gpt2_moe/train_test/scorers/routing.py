@@ -6,7 +6,7 @@ from .common import IGNORE_INDEX
 from .jenser_divergence import JensenDivergence
 
 
-def route(model, input_ids:torch.Tensor, device:str)->dict[int, torch.Tensor]:
+def route(model:object, input_ids:torch.Tensor, device:str)->dict[int, torch.Tensor]:
     """
         Function aimed to retrieve the experts selected
         by the router of every MoE layer for each token
@@ -120,7 +120,7 @@ def routing_matrix(model:object, loader:object, device:str)->torch.Tensor:
     return torch.divide(counts, counts.sum(dim = -1, keepdim = True))
 
 
-def routing_jsd(model, loader, device:str, **kwargs)->dict[str:float]:
+def routing_jsd(model:object, loader:object, device:str, **kwargs)->dict[str:float]:
     """
         Function aimed to measure expert specialization as the
         mean Jensen-Shannon divergence between the routing

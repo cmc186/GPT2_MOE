@@ -16,7 +16,7 @@ def token_accuracy(model, loader, device:str, **kwargs)->dict:
             loader(DataLoader):
                 Loader over a TaskDataset
             device(str):
-                cuda or cpu
+                Device: cuda or cpu
 
         Returns:
             results(dict):
